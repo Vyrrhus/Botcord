@@ -67,15 +67,19 @@ class Twitter:
 					
 				# For each tweet :
 				for tweet in tweets:
-					EMB = discord.Embed(title='https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str),
-									    url='https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str),
-									    color=0xffffff)
-					EMB.set_author(name='@{}'.format(tweet.user.screen_name),
-								   url='https://twitter.com/{}'.format(tweet.user.screen_name),
-								   icon_url=tweet.user.profile_image_url)
-					EMB.add_field(name='Nouveau tweet : ', value=tweet.text, inline=True)
-					EMB.set_footer(text='Date du tweet : ')
-					EMB.timestamp = tweet.created_at
+					try:
+						img = tweet.entities['media'][0]['media_url']
+					except:
+						img = None
+					EMB = tool.set_embed(color=0xffffff,
+										 title='https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str),
+										 title_url='https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str),
+										 author='@{}'.format(tweet.user.screen_name),
+										 author_url='https://twitter.com/{}'.format(tweet.user.screen_name),
+										 author_icon=tweet.user.profile_image_url,
+										 timestamp=tweet.created_at,
+										 image=img,
+										 fields=[tool.set_field(name='Nouveau tweet : ', value=tweet.full_text, inline=True)])
 					
 					# For each channel :
 					remove_channels = []
@@ -95,7 +99,7 @@ class Twitter:
 						# Add tweet info
 						data_tweet[element][tweet.id_str] = {'date': str(tweet.created_at),
 															 'link': 'https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str),
-															 'text': tweet.text}
+															 'text': tweet.full_text}
 						tags = twool.get_tags(tweet)
 						data_tweet[element][tweet.id_str]['tags'] = tags
 						# Save tweets' data file
@@ -195,7 +199,7 @@ class Twitter:
 		"""Ajoute le compte à la liste des comptes suivis dans ce salon
 		
 		EXEMPLE
-		------- 6230.0
+		-------
 		> ?follow Action_Insoumis : ajoute [Action_Insoumis] à la liste des comptes suivis sur ce salon
 		> ?follow : afficher la liste des comptes suivis sur ce salon
 		"""
@@ -246,6 +250,7 @@ class Twitter:
 	# LISTEN ACCOUNT
 	@commands.command(name='listen', pass_context=True)
 	async def listen(self, ctx, *compte_twitter):
+		return
 		"""Ajoute le compte à la liste des comptes suivis (tags compris)
 		
 		EXEMPLE
@@ -273,6 +278,7 @@ class Twitter:
 	# IGNORE ACCOUNT
 	@commands.command(name='ignore', pass_context=True)
 	async def ignore(self, ctx, *compte_twitter):
+		return
 		"""Retire le compte de la liste des comptes écoutés (tag compris)
 		"""
 		print('IGNORE')
@@ -289,6 +295,7 @@ class Twitter:
 	# GET TAG LIST
 	@commands.command(name='tag', pass_context=True)
 	async def tag(self, ctx, *compte_twitter):
+		return
 		"""Récupère une liste des tags réalisés ou plus d'infos sur un compte en particulier
 		
 		EXEMPLE
@@ -312,6 +319,7 @@ class Twitter:
 	# UPDATE PARAMETERS
 	@commands.command(name='settings', pass_context=True)
 	async def settings(self, ctx):
+		return
 		"""Modifier les settings de TWITTER"""
 		print('SETTINGS')
 		
