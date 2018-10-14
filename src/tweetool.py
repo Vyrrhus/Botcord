@@ -28,14 +28,14 @@ def get_target(api, name):
 def get_tweet(api, target, since_id=None, created_since=None, exclude_retweets=True, only_retweets=False):
 	tweets = []
 	if since_id:
-		cursor = tweepy.Cursor(api.user_timeline, user_id=target.id, since_id=since_id, exclude_replies=True)
+		cursor = tweepy.Cursor(api.user_timeline, user_id=target.id, since_id=since_id, exclude_replies=True, tweet_mode="extended")
 	else:
-		cursor = tweepy.Cursor(api.user_timeline, user_id=target.id, exclude_replies=True)
+		cursor = tweepy.Cursor(api.user_timeline, user_id=target.id, exclude_replies=True, tweet_mode="extended")
 	
-	print('Searching since {} | max : {}'.format(since_id, str(created_since)))
+#	print('Searching since {} | max : {}'.format(since_id, str(created_since)))
 	
 	for status in cursor.items():
-		print('Status found : {}\nText: {}'.format(str(status.created_at), status.text))
+#		print('Status found : {}\nText: {}'.format(str(status.created_at), status.text))
 		if not since_id:
 			try:
 				if status.created_at < created_since:
@@ -44,7 +44,7 @@ def get_tweet(api, target, since_id=None, created_since=None, exclude_retweets=T
 				print('Forgot created_since=xxxxxx')
 				break
 		if exclude_retweets:
-			if 'RT @' in status.text:
+			if 'RT @' in status.full_text:
 				continue
 		if only_retweets:
 			if not hasattr(status, 'retweeted_status') and not hasattr(status, 'quoted_status'):
