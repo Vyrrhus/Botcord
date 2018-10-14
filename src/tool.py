@@ -19,27 +19,59 @@ def set_data(data_file, outfile):
 	with open(outfile, 'w') as outfile:
 		json.dump(data_file, outfile, indent=4)
 
-def set_twitter_embed(titleheader=None, fields=[], footer=None):
-	"""Retourne un embed"""
-	if color:
-		EMB = discord.Embed(color=color)
-	else:
-		EMB = discord.Embed()
-	EMB.type = 'rich'
-	if header:
-		EMB.set_author(name=header['name'], icon_url=header['icon'])
-		if 'thumbnail' in header:
-			EMB.set_thumbnail(url=header['thumbnail'])
-	for e in fields:
-		if not 'inline' in e:
-			e['inline'] = False
-		if 'name' in e:
-			EMB.add_field(name=e['name'], value=e['value'], inline=e['inline'])
-		else:
-			EMB.add_field(name='Texte : ', value=e['value'], inline=e['inline'])
-	if footer:
-		EMB.set_footer(text=footer['text'])
-		if footer['time']:
-			EMB.timestamp = footer['time']
-		
+def set_field(**kwargs):
+	return {k: v for k, v in kwargs.items() if k in ['name', 'value', 'inline']}
+	
+def set_embed(**kwargs):
+	"""Retourne un EMBED
+	
+	Nb max de caractères par field : 1024
+	Nb max de caractères : 6000
+	
+	KWARGS
+	------
+	- color
+	- title
+	- description
+	- title_url
+	- timestamp
+	- author
+	- author_url
+	- author_icon
+	- footer_text
+	- footer_icon
+	- image
+	- thumbnail
+	- fields : List
+	"""
+	title = {k: v for k, v in kwargs.items() if k in ['color', 'title', 'description', 'title_url', 'timestamp']}
+	author = {k: v for k, v in kwargs.items() if k in ['author', 'author_url', 'author_icon']}
+	footer = {k: v for k, v in kwargs.items() if k in ['footer_text', 'footer_icon']}
+	img = kwargs.get('image', None)
+	thumbnail = kwargs.get('thumbnail', None)
+	fields = kwargs.get('fields', [])
+	
+	EMB = discord.Embed(**title)
+	EMB.set_author(**author)
+	EMB.set_footer(**footer)
+	try:
+		EMB.set_image(url=img)
+	except:
+		pass
+	try:
+		EMB.set_thumbnail(url=thumbnail)
+	except:
+		pass
+	
+	try:
+		for element in fields:
+			try:
+				field = {k: v for k, v in element.items() if k in ['name', 'value', 'inline']}
+				EMB.add_field(**field)
+			except:
+				continue
+	except:
+		pass
 	return EMB
+
+def 
