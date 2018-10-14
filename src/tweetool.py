@@ -3,8 +3,6 @@ import src.tool as tool
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
-#from datetime import timedelta
-#import time
 
 from src.config.settings import data
 
@@ -32,10 +30,7 @@ def get_tweet(api, target, since_id=None, created_since=None, exclude_retweets=T
 	else:
 		cursor = tweepy.Cursor(api.user_timeline, user_id=target.id, exclude_replies=True, tweet_mode="extended")
 	
-#	print('Searching since {} | max : {}'.format(since_id, str(created_since)))
-	
 	for status in cursor.items():
-#		print('Status found : {}\nText: {}'.format(str(status.created_at), status.text))
 		if not since_id:
 			try:
 				if status.created_at < created_since:
