@@ -28,7 +28,7 @@ class Twitter:
 		self.account = {}
 		asyncio.get_event_loop().create_task(self.listen_accounts())
 	
-	######################################.0#####
+	###########################################
 	#            COROUTINE TASK               #
 	###########################################	
 	async def listen_accounts(self):
