@@ -28,7 +28,7 @@ class Twitter:
 		self.account = {}
 		asyncio.get_event_loop().create_task(self.listen_accounts())
 	
-	###########################################
+	######################################.0#####
 	#            COROUTINE TASK               #
 	###########################################	
 	async def listen_accounts(self):
@@ -85,8 +85,6 @@ class Twitter:
 					remove_channels = []
 					for channel_id in data['TWITTER']['ACCOUNT'][element]['channel']:
 						channel = self.client.get_channel(channel_id)
-						print(channel_id)
-						print(channel)
 						if channel:
 							await channel.send(content=None, embed=EMB)
 					
@@ -213,10 +211,13 @@ class Twitter:
 			if not accounts:
 				return await ctx.channel.send("Aucun compte twitter n'est suivi ici :shrug:")
 			else:
-				EMB = discord.Embed(color=0x000000)
-				EMB.set_author(name='Comptes twitters suivis :')
-				EMB.add_field(name='Liste:', value='\n'.join(accounts))
-				return await ctx.channel.send(content=None, embed=EMB)
+				EMB = tool.set_embed(color=0x22aaaa,
+									 author='Comptes twitters suivis',
+									 author_icon='https://pbs.twimg.com/profile_images/1013798240683266048/zRim1x6M_400x400.jpg',
+									 description='Toute la liste ci-dessous est suivie sur ce salon, par ordre chronologique.\n?follow <nom_du_compte> : ajouter un compte\n?unfollow <nom_du_compte> : retirer un compte')
+				list_accounts = ['\n'.join(accounts[n:n+10]) for n in range(0, len(accounts), 10)]
+				
+				message, result = await tool.enhance_embed(self.client, ctx, EMB, name='COMPTES', values=list_accounts)
 			
 		# Ajout des comptes à follow
 		else:
@@ -237,153 +238,169 @@ class Twitter:
 		print('REMOVE')
 		if not compte_twitter:
 			return
-		for compte in compte_twitter:
-			compte = compte.lower()
+		
+		# UNFOLLOW ALL
+		if compte_twitter[0] in ['all', '*']:
+			del_list = []
+			for account in data['TWITTER']['ACCOUNT']:
+				try:
+					data['TWITTER']['ACCOUNT'][account]['channel'].remove(ctx.channel.id)
+					if not data['TWITTER']['ACCOUNT'][account]['channel']:
+						del_list.append(account)
+				except:
+					continue
+			for account in del_list:
+				data['TWITTER']['ACCOUNT'].pop(account)
+			return
+		
+		# UNFOLLOW SPECIFIC ACCOUNTS
+		for account in compte_twitter:
+			account = account.lower()
 			try:
-				data['TWITTER']['ACCOUNT'][compte]['channel'].remove(ctx.channel.id)
-				if not data['TWITTER']['ACCOUNT'][compte]['channel']:
-					data['TWITTER']['ACCOUNT'].remove(compte)
+				data['TWITTER']['ACCOUNT'][account]['channel'].remove(ctx.channel.id)
+				if not data['TWITTER']['ACCOUNT'][account]['channel']:
+					data['TWITTER']['ACCOUNT'].pop(account)
 			except:
-				print("{} n'est pas dans la liste".format(compte))
+				print("{} n'est pas dans la liste".format(account))
 				pass
 	
-	# LISTEN ACCOUNT
-	@commands.command(name='listen', pass_context=True)
-	async def listen(self, ctx, *compte_twitter):
-		return
-		"""Ajoute le compte à la liste des comptes suivis (tags compris)
-		
-		EXEMPLE
-		-------
-		> ?listen Action_Insoumis : permettra de check tous les tags de Action_Insoumis
-		> ?listen : afficher la liste des comptes écoutés
-		"""
-		print('LISTEN')
-		#Liste des comptes écoutés :
-		if not compte_twitter:
-			accounts = data['TWITTER']['LISTEN']
-			if not accounts:
-				return await ctx.channel.send("Aucun compte twitter n'est écouté actuellement.")
-			EMB = discord.Embed(color=0x000000)
-			EMB.set_author(name='Comptes twitters surveillés :')
-			EMB.add_field(name='Liste:', value='\n'.join(accounts))
-			return await ctx.channel.send(content=None, embed=EMB)
-		
-		 # Ajout de comptes à écouter
-		for compte in compte_twitter:
-			compte = compte.lower()
-			data['TWITTER']['LISTEN'].append(compte)
-		return
-			
-	# IGNORE ACCOUNT
-	@commands.command(name='ignore', pass_context=True)
-	async def ignore(self, ctx, *compte_twitter):
-		return
-		"""Retire le compte de la liste des comptes écoutés (tag compris)
-		"""
-		print('IGNORE')
-		if not compte_twitter:
-			return
-		for compte in compte_twitter:
-			compte = compte.lower()
-			try:
-				data['TWITTER']['LISTEN'].remove(compte)
-			except:
-				pass
-		return
-	
-	# GET TAG LIST
-	@commands.command(name='tag', pass_context=True)
-	async def tag(self, ctx, *compte_twitter):
-		return
-		"""Récupère une liste des tags réalisés ou plus d'infos sur un compte en particulier
-		
-		EXEMPLE
-		-------
-		> ?tag Action_Insoumis : récupère la liste complète des tags du compte associé à LISTEN (on peut naviguer entre les pages)
-		"""
-		print('TAG')
-		
-		# Check for the reaction add
-		def check_reaction(m):
-			return True
-		
-		# Getting data
-		
-		
-		# Embed of the tags
-		
-		
-		return
-	
-	# UPDATE PARAMETERS
-	@commands.command(name='settings', pass_context=True)
-	async def settings(self, ctx):
-		return
-		"""Modifier les settings de TWITTER"""
-		print('SETTINGS')
-		
-		# Check for the replies
-		def check_reply(m):
-			return m.author == ctx.author and m.channel == ctx.channel
-		
-		# Embed of the settings
-		EMB = discord.Embed(color=0x840000)
-		EMB.set_author(name='Paramètres du module TWITTER', icon_url='https://pbs.twimg.com/profile_images/1035308510505062401/2YgRA4iz_400x400.jpg')
-		EMB.add_field(name='Paramètres :', value='1. SLEEP_TIME [{}mn]\nDélai entre deux checks de Twitter en minutes\n2. MAX_TIMEDELTA [{}h]\nDurée maximale pour RT | FAV un tweet identifié en heures'.format(data['TWITTER']['SLEEP_TIME_MN'], data['TWITTER']['MAX_TIMEDELTA_HOURS']))
-		EMB.set_footer(text='Indiquer le paramètre à modifier [num]')
-		msg_emb = await ctx.channel.send(content=None, embed=EMB)
-		
-		# Reply within 30s and edit
-		reply = await self.client.wait_for('message', check=check_reply, timeout=30)
-		num = reply.content
-		EMB = discord.Embed(color=0x840000)
-		EMB.set_author(name='Paramètres du module TWITTER', icon_url='https://pbs.twimg.com/profile_images/1035308510505062401/2YgRA4iz_400x400.jpg')
-		if num == '1':
-			EMB.add_field(name='SLEEP_TIME', value='{} minute(s)'.format(data['TWITTER']['SLEEP_TIME_MN']))
-		elif num == '2':
-			EMB.add_field(name='MAX_TIMEDELTA', value='{} heure(s)'.format(data['TWITTER']['MAX_TIMEDELTA_HOURS']))
-		else:
-			EMB.add_field(name='Erreur', value='Le numéro ne correspond à aucun paramètre.')
-			await msg_emb.edit(content=None, embed=EMB, delete_after=15)
-			try:
-				await reply.delete()
-			except:
-				# No permission to delete message
-				pass
-			return
-		EMB.set_footer(text='Indiquer la valeur du paramètre.')
-		try:
-			await reply.delete()
-		except:
-			# No permission to delete message
-			pass
-		await msg_emb.edit(content=None, embed=EMB)
-		
-		# Final reply
-		reply = await self.client.wait_for('message', check=check_reply, timeout=30)
-		try:
-			value = int(reply.content)
-		except:
-			value = None
-		
-		try:
-			await reply.delete()
-		except:
-			pass
-			
-		if not value:
-			await msg_emb.edit(content='Erreur : le paramètre ne peut pas prendre cette valeur', embed=None)
-			return
-		
-		if num == '1':
-			data['TWITTER']['SLEEP_TIME_MN'] = value
-			await msg_emb.edit(content='SLEEP_TIME a été mis à jour [{}mn]'.format(value), embed=None)
-			return
-		if num == '2':
-			data['TWITTER']['MAX_TIMEDELTA_HOURS'] = value
-			await msg_emb.edit(content='MAX_TIMEDELTA a été mis à jour [{}h]'.format(value), embed=None)
-			return
+#	# LISTEN ACCOUNT
+#	@commands.command(name='listen', pass_context=True)
+#	async def listen(self, ctx, *compte_twitter):
+#		return
+#		"""Ajoute le compte à la liste des comptes suivis (tags compris)
+#		
+#		EXEMPLE
+#		-------
+#		> ?listen Action_Insoumis : permettra de check tous les tags de Action_Insoumis
+#		> ?listen : afficher la liste des comptes écoutés
+#		"""
+#		print('LISTEN')
+#		#Liste des comptes écoutés :
+#		if not compte_twitter:
+#			accounts = data['TWITTER']['LISTEN']
+#			if not accounts:
+#				return await ctx.channel.send("Aucun compte twitter n'est écouté actuellement.")
+#			EMB = discord.Embed(color=0x000000)
+#			EMB.set_author(name='Comptes twitters surveillés :')
+#			EMB.add_field(name='Liste:', value='\n'.join(accounts))
+#			return await ctx.channel.send(content=None, embed=EMB)
+#		
+#		 # Ajout de comptes à écouter
+#		for compte in compte_twitter:
+#			compte = compte.lower()
+#			data['TWITTER']['LISTEN'].append(compte)
+#		return
+#			
+#	# IGNORE ACCOUNT
+#	@commands.command(name='ignore', pass_context=True)
+#	async def ignore(self, ctx, *compte_twitter):
+#		return
+#		"""Retire le compte de la liste des comptes écoutés (tag compris)
+#		"""
+#		print('IGNORE')
+#		if not compte_twitter:
+#			return
+#		for compte in compte_twitter:
+#			compte = compte.lower()
+#			try:
+#				data['TWITTER']['LISTEN'].remove(compte)
+#			except:
+#				pass
+#		return
+#	
+#	# GET TAG LIST
+#	@commands.command(name='tag', pass_context=True)
+#	async def tag(self, ctx, *compte_twitter):
+#		return
+#		"""Récupère une liste des tags réalisés ou plus d'infos sur un compte en particulier
+#		
+#		EXEMPLE
+#		-------
+#		> ?tag Action_Insoumis : récupère la liste complète des tags du compte associé à LISTEN (on peut naviguer entre les pages)
+#		"""
+#		print('TAG')
+#		
+#		# Check for the reaction add
+#		def check_reaction(m):
+#			return True
+#		
+#		# Getting data
+#		
+#		
+#		# Embed of the tags
+#		
+#		
+#		return
+#	
+#	# UPDATE PARAMETERS
+#	@commands.command(name='settings', pass_context=True)
+#	async def settings(self, ctx):
+#		return
+#		"""Modifier les settings de TWITTER"""
+#		print('SETTINGS')
+#		
+#		# Check for the replies
+#		def check_reply(m):
+#			return m.author == ctx.author and m.channel == ctx.channel
+#		
+#		# Embed of the settings
+#		EMB = discord.Embed(color=0x840000)
+#		EMB.set_author(name='Paramètres du module TWITTER', icon_url='https://pbs.twimg.com/profile_images/1035308510505062401/2YgRA4iz_400x400.jpg')
+#		EMB.add_field(name='Paramètres :', value='1. SLEEP_TIME [{}mn]\nDélai entre deux checks de Twitter en minutes\n2. MAX_TIMEDELTA [{}h]\nDurée maximale pour RT | FAV un tweet identifié en heures'.format(data['TWITTER']['SLEEP_TIME_MN'], data['TWITTER']['MAX_TIMEDELTA_HOURS']))
+#		EMB.set_footer(text='Indiquer le paramètre à modifier [num]')
+#		msg_emb = await ctx.channel.send(content=None, embed=EMB)
+#		
+#		# Reply within 30s and edit
+#		reply = await self.client.wait_for('message', check=check_reply, timeout=30)
+#		num = reply.content
+#		EMB = discord.Embed(color=0x840000)
+#		EMB.set_author(name='Paramètres du module TWITTER', icon_url='https://pbs.twimg.com/profile_images/1035308510505062401/2YgRA4iz_400x400.jpg')
+#		if num == '1':
+#			EMB.add_field(name='SLEEP_TIME', value='{} minute(s)'.format(data['TWITTER']['SLEEP_TIME_MN']))
+#		elif num == '2':
+#			EMB.add_field(name='MAX_TIMEDELTA', value='{} heure(s)'.format(data['TWITTER']['MAX_TIMEDELTA_HOURS']))
+#		else:
+#			EMB.add_field(name='Erreur', value='Le numéro ne correspond à aucun paramètre.')
+#			await msg_emb.edit(content=None, embed=EMB, delete_after=15)
+#			try:
+#				await reply.delete()
+#			except:
+#				# No permission to delete message
+#				pass
+#			return
+#		EMB.set_footer(text='Indiquer la valeur du paramètre.')
+#		try:
+#			await reply.delete()
+#		except:
+#			# No permission to delete message
+#			pass
+#		await msg_emb.edit(content=None, embed=EMB)
+#		
+#		# Final reply
+#		reply = await self.client.wait_for('message', check=check_reply, timeout=30)
+#		try:
+#			value = int(reply.content)
+#		except:
+#			value = None
+#		
+#		try:
+#			await reply.delete()
+#		except:
+#			pass
+#			
+#		if not value:
+#			await msg_emb.edit(content='Erreur : le paramètre ne peut pas prendre cette valeur', embed=None)
+#			return
+#		
+#		if num == '1':
+#			data['TWITTER']['SLEEP_TIME_MN'] = value
+#			await msg_emb.edit(content='SLEEP_TIME a été mis à jour [{}mn]'.format(value), embed=None)
+#			return
+#		if num == '2':
+#			data['TWITTER']['MAX_TIMEDELTA_HOURS'] = value
+#			await msg_emb.edit(content='MAX_TIMEDELTA a été mis à jour [{}h]'.format(value), embed=None)
+#			return
 		
 def setup(client):
 	client.add_cog(Twitter(client))

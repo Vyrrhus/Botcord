@@ -1,6 +1,7 @@
 import discord
 from datetime import datetime
 import json
+import asyncio
 
 def str_to_date(str_time):
 	return datetime.strptime(str_time, '%Y-%m-%d %H:%M:%S.%f')
@@ -41,7 +42,7 @@ def set_embed(**kwargs):
 	- color
 	- title
 	- description
-	- title_url
+	- title_url 
 	- timestamp
 	- author
 	- author_url
@@ -71,9 +72,17 @@ def set_embed(**kwargs):
 	# FIELDS
 	fields = kwargs.get('fields', [])
 	
+	# EMBED ELEMENTS
 	EMB = discord.Embed(**title)
-	EMB.set_author(**author)
-	EMB.set_footer(**footer)
+	try:
+		EMB.set_author(**author)
+	except:
+		pass
+	try:
+		EMB.set_footer(**footer)
+	except:
+		pass
+	
 	if img:
 		EMB.set_image(url=img)
 	if thumbnail:
@@ -88,3 +97,70 @@ def set_embed(**kwargs):
 	except:
 		pass
 	return EMB
+
+async def enhance_embed(client, ctx, embed, confirm=False, message=None, name='Default name', values=[], **kwargs):
+	"""Dynamic embed messages
+	
+	OUTPUT
+	------
+	> message (with the embed, for editing purpose)
+	> result (str or None) -> value confirmed by a tick, if it exists
+	
+	"""
+	# Get pages length
+	max_page = len(values)
+	if max_page == 0:
+		print('No values stored into the list')
+		return message, None
+	current_page = 1
+	index = kwargs.get('index', None)
+	left = u"\U00002B05"
+	right = u"\U000027A1"
+	tick = u"\U00002611"
+	
+	# Add field
+	if index is not None:
+		print('Index : {}'.format(index))
+		embed.set_field_at(index, name=name, value=values[current_page-1], inline=kwargs.get('inline', True))
+	else:
+		index = len(embed.fields)
+		embed.add_field(name=name, value=values[current_page-1], inline=kwargs.get('inline', True))
+	
+	# Edit or send message
+	if not message:
+		message = await ctx.channel.send(content=kwargs.get('content', None), 
+									 	embed=embed.set_footer(text='Mettez une réaction pour changer de page. Page {} / {}'.format(current_page, max_page)))
+	else:
+		await message.edit(content=kwargs.get('content', None),
+						   embed=embed.set_footer(text='Mettez une réaction pour changer de page. Page {} / {}'.format(current_page, max_page)))
+	if max_page <= 1:
+		return message, None
+	
+	# Init reactions
+	for emoji in [left, tick, right]:
+		if emoji == tick and not confirm:
+			continue
+		await message.add_reaction(emoji)
+		
+	# Wait for reaction replies
+	def check(reaction: discord.Reaction, adder: discord.User):
+		return adder == ctx.message.author and reaction.message.id == message.id and reaction.emoji in [left, right, tick]
+	while True:
+		try:
+			reaction, adder = await client.wait_for('reaction_add', check=check, timeout=30)
+			if reaction.emoji == left and current_page > 1:
+				current_page -= 1
+			elif reaction.emoji == right and current_page < max_page:
+				current_page += 1
+			elif reaction.emoji == tick and confirm:
+				result = values[current_page-1]
+				return message, result
+			try:
+				await message.remove_reaction(reaction.emoji, adder)
+			except:
+				print('Cannot delete reactions from other users')
+			embed.set_field_at(index, name=name, value=values[current_page-1], inline=kwargs.get('inline', True))
+			await message.edit(content=kwargs.get('content', None), 
+							   embed=embed.set_footer(text='Mettez une réaction pour changer de page. Page {} / {}'.format(current_page, max_page)))
+		except:
+			return message, None
