@@ -35,7 +35,7 @@ class Twitter:
 		await self.client.wait_until_ready()
 		print('TASK')
 		# Login
-		api = twool.login()
+		api = await twool.login()
 		print('Logged in successfully')
 		
 		# Parameters
@@ -49,7 +49,7 @@ class Twitter:
 			# Listening for each account to retrieve their tweets and put it on the right channel.
 			# If Listened, store the corresponding tags
 			for element in data['TWITTER']['ACCOUNT']:
-				target = twool.get_target(api, element)
+				target = await twool.get_target(api, element)
 				if not target:
 					"""AFFICHER UN MSG COMME QUOI LA TARGET EXISTE PLUS"""
 					print("{} n'existe plus ???".format(element))
@@ -58,7 +58,7 @@ class Twitter:
 				# Get tweets
 				since_id = data['TWITTER']['ACCOUNT'][element]['since_id']
 				created_since = tool.str_to_date(data['TWITTER']['ACCOUNT'][element]['created_since'])
-				tweets, last_tweet_id = twool.get_tweet(api, target, since_id=since_id, created_since=created_since)
+				tweets, last_tweet_id = await twool.get_tweet(api, target, since_id=since_id, created_since=created_since)
 				data['TWITTER']['ACCOUNT'][element]['since_id'] = last_tweet_id
 				if not tweets:
 					print('No tweets found')
@@ -98,7 +98,7 @@ class Twitter:
 						data_tweet[element][tweet.id_str] = {'date': str(tweet.created_at),
 															 'link': 'https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str),
 															 'text': tweet.full_text}
-						tags = twool.get_tags(tweet)
+						tags = await twool.get_tags(tweet)
 						data_tweet[element][tweet.id_str]['tags'] = tags
 						# Save tweets' data file
 						tool.set_data(data_tweet, 'src/config/data_tweet.json')
@@ -125,12 +125,12 @@ class Twitter:
 			for element in data_tags:
 				remove_accounts = []
 				for account in data_tags[element]['in_progress']:
-					target = twool.get_target(api, account)
+					target = await twool.get_target(api, account)
 					if not target:
 						"""AFFICHER UN MESSAGE COMME QUOI LA TARGET EXISTE PLUS"""
 						continue
 					since_id = min([tweet['since_id'] for tweet in data_tags[element]['in_progress'][account]])
-					retweets, next_since_id = twool.get_tweet(api, target, since_id=since_id, exclude_retweets=False, only_retweets=True)
+					retweets, next_since_id = await twool.get_tweet(api, target, since_id=since_id, exclude_retweets=False, only_retweets=True)
 					retweet_id = []
 					for retweet in retweets:
 						if hasattr(retweet, 'retweeted_status'):
@@ -147,7 +147,7 @@ class Twitter:
 							tweet['RT'] = True
 							print('{} a RT {}'.format(account, tweet['id']))
 						# FAV
-						if tweet['id'] in twool.get_fav(api, target, tweet['id']):
+						if tweet['id'] in await twool.get_fav(api, target, tweet['id']):
 							tweet['FAV'] = True
 							print('{} a FAV {}'.format(account, tweet['id']))
 						# Update time

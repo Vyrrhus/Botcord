@@ -1,4 +1,5 @@
 import tweepy
+import asyncio
 import src.tool as tool
 import requests
 from bs4 import BeautifulSoup
@@ -6,7 +7,7 @@ from datetime import datetime
 
 from src.config.settings import data
 
-def login():
+async def login():
 	# Set API twitter
 	auth = tweepy.OAuthHandler(consumer_key = data['TWITTER']['AUTH']['CONSUMER_KEY'], 
 							   consumer_secret = data['TWITTER']['AUTH']['CONSUMER_SECRET'])
@@ -15,7 +16,7 @@ def login():
 	api = tweepy.API(auth)
 	return api
 
-def get_target(api, name):
+async def get_target(api, name):
 	try:
 		target = api.get_user(name)
 		return target
@@ -23,7 +24,7 @@ def get_target(api, name):
 		# Target unreachable
 		return None
 
-def get_tweet(api, target, since_id=None, created_since=None, exclude_retweets=True, only_retweets=False):
+async def get_tweet(api, target, since_id=None, created_since=None, exclude_retweets=True, only_retweets=False):
 	tweets = []
 	if since_id:
 		cursor = tweepy.Cursor(api.user_timeline, user_id=target.id, since_id=since_id, exclude_replies=True, tweet_mode="extended")
@@ -56,7 +57,7 @@ def get_tweet(api, target, since_id=None, created_since=None, exclude_retweets=T
 		# No status found
 		return tweets, since_id
 	
-def get_tags(tweet):
+async def get_tags(tweet):
 	link = 'https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str)
 	rq = requests.get(link)
 	soup = BeautifulSoup(rq.content, 'html.parser')
@@ -69,7 +70,7 @@ def get_tags(tweet):
 	tags = list(set(tags))
 	return tags
 
-def get_fav(api, target, tweet_id):
+async def get_fav(api, target, tweet_id):
 	fav = []
 	cursor = tweepy.Cursor(api.favorites, user_id=target.id, since_id=tweet_id-1, max_id=tweet_id+1)
 	
