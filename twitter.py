@@ -185,7 +185,8 @@ class Twitter:
 		try:
 			return await check.is_staff(ctx.author)
 		except:
-			return True
+			print('not on the right server')
+			return False
 	
 	###########################################
 	#                COMMANDES                #
@@ -214,7 +215,7 @@ class Twitter:
 				EMB = tool.set_embed(color=0x22aaaa,
 									 author='Comptes twitters suivis',
 									 author_icon='https://pbs.twimg.com/profile_images/1013798240683266048/zRim1x6M_400x400.jpg',
-									 description='Toute la liste ci-dessous est suivie sur ce salon, par ordre chronologique.\n?follow <nom_du_compte> : ajouter un compte\n?unfollow <nom_du_compte> : retirer un compte')
+									 description='La liste ci-dessous est suivie sur ce salon, par ordre chronologique.\n?follow <nom_du_compte> : ajouter un compte\n?unfollow <nom_du_compte> : retirer un compte')
 				list_accounts = ['\n'.join(accounts[n:n+10]) for n in range(0, len(accounts), 10)]
 				
 				message, result = await tool.enhance_embed(self.client, ctx, EMB, name='COMPTES', values=list_accounts)
@@ -264,33 +265,33 @@ class Twitter:
 				print("{} n'est pas dans la liste".format(account))
 				pass
 	
-#	# LISTEN ACCOUNT
-#	@commands.command(name='listen', pass_context=True)
-#	async def listen(self, ctx, *compte_twitter):
-#		return
-#		"""Ajoute le compte à la liste des comptes suivis (tags compris)
-#		
-#		EXEMPLE
-#		-------
-#		> ?listen Action_Insoumis : permettra de check tous les tags de Action_Insoumis
-#		> ?listen : afficher la liste des comptes écoutés
-#		"""
-#		print('LISTEN')
-#		#Liste des comptes écoutés :
-#		if not compte_twitter:
-#			accounts = data['TWITTER']['LISTEN']
-#			if not accounts:
-#				return await ctx.channel.send("Aucun compte twitter n'est écouté actuellement.")
-#			EMB = discord.Embed(color=0x000000)
-#			EMB.set_author(name='Comptes twitters surveillés :')
-#			EMB.add_field(name='Liste:', value='\n'.join(accounts))
-#			return await ctx.channel.send(content=None, embed=EMB)
-#		
-#		 # Ajout de comptes à écouter
-#		for compte in compte_twitter:
-#			compte = compte.lower()
-#			data['TWITTER']['LISTEN'].append(compte)
-#		return
+	# TRACK ACCOUNT
+	@commands.command(name='track', pass_context=True)
+	async def track(self, ctx, *compte_twitter):
+		"""Collecte des données sur le compte (chaque tweet + tags publiés)
+		"""
+		print('TRACK')
+		#Liste des comptes écoutés :
+		if not compte_twitter:
+			accounts = data['TWITTER']['LISTEN']
+			if not accounts:
+				return await ctx.channel.send("Aucun compte twitter n'est traqué.")
+			EMB = tool.set_embed(color=0x006a6a,
+								 author='Comptes twitters traqués',
+								 author_icon='https://pbs.twimg.com/profile_images/1013798240683266048/zRim1x6M_400x400.jpg',
+								 description='Les tweets des comptes ci-dessous sont sauvegardés et les tags de leurs publications surveillés, par ordre chronologique.\n?track <compte_twitter> : ajouter un compte\n?untrack <compte_twitter> : retirer un compte')
+			list_accounts = ['\n'.join(accounts[n:n+10]) for n in range(0, len(accounts), 10)]
+			message, result = await tool.enhance_embed(self.client, ctx, EMB, name='COMPTES', values=list_accounts)
+			return
+		
+		 # Ajout de comptes à écouter
+		else:
+			for compte in compte_twitter:
+				compte = compte.lower()
+				if not compte in data['TWITTER']['LISTEN']:
+					data['TWITTER']['LISTEN'].append(compte)
+			return
+		
 #			
 #	# IGNORE ACCOUNT
 #	@commands.command(name='ignore', pass_context=True)
