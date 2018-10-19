@@ -291,24 +291,30 @@ class Twitter:
 				if not compte in data['TWITTER']['LISTEN']:
 					data['TWITTER']['LISTEN'].append(compte)
 			return
+				
+	# UNTRACK ACCOUNT
+	@commands.command(name='untrack', pass_context=True)
+	async def untrack(self, ctx, *compte_twitter):
+		"""Retire le compte de la liste des comptes traqués
+		"""
+		print('UNTRACK')
+		if not compte_twitter:
+			return
 		
-#			
-#	# IGNORE ACCOUNT
-#	@commands.command(name='ignore', pass_context=True)
-#	async def ignore(self, ctx, *compte_twitter):
-#		return
-#		"""Retire le compte de la liste des comptes écoutés (tag compris)
-#		"""
-#		print('IGNORE')
-#		if not compte_twitter:
-#			return
-#		for compte in compte_twitter:
-#			compte = compte.lower()
-#			try:
-#				data['TWITTER']['LISTEN'].remove(compte)
-#			except:
-#				pass
-#		return
+		# UNTRACK ALL
+		if compte_twitter[0] in ['all', '*']:
+			data['TWITTER']['LISTEN'] = []
+			return
+		
+		# UNTRACK SPECIFIC ACCOUNTS
+		for account in compte_twitter:
+			account = account.lower()
+			try:
+				data['TWITTER']['LISTEN'].remove(account)
+			except:
+				print("{} n'est pas dans la liste.".format(account))
+				pass
+	
 #	
 #	# GET TAG LIST
 #	@commands.command(name='tag', pass_context=True)
