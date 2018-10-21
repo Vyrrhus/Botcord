@@ -183,7 +183,7 @@ class Twitter:
 		""" Les commandes de ce cog ne peuvent être utilisées que par un staff"""
 		print('twitter command local check')
 		try:
-			return await check.is_staff(ctx.author)
+			return check.is_staff(ctx.author)
 		except:
 			print('not on the right server')
 			return False
