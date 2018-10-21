@@ -45,6 +45,8 @@ extensions = ['twitter']
 @client.event
 async def on_ready():
 	"""Bot fonctionnel"""
+	salon = client.get_channel(503569108390903811)
+	await salon.send('Connection')
 	print('HAL 9000 connecté on {}'.format(datetime.datetime.utcnow().strftime("%d-%m %H:%M:%S")))
 
 @client.before_invoke
