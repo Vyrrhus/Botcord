@@ -47,7 +47,7 @@ class Twitter:
 			tool.set_data(data, 'src/config/settings.json')
 			
 			# Parameters
-			sleep_time = 60 * data['TWITTER']['SLEEP_TIME_MN']
+			sleep_time = 60 * 5 * data['TWITTER']['SLEEP_TIME_MN']
 			
 			# Listening for each account to retrieve their tweets and put it on the right channel.
 			# If Listened, store the corresponding tags
