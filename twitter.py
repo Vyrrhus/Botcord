@@ -43,6 +43,9 @@ class Twitter:
 		
 		# Loop
 		while True:
+			# Save data
+			tool.set_data(data, 'src/config/settings.json')
+			
 			# Parameters
 			sleep_time = 60 * data['TWITTER']['SLEEP_TIME_MN']
 			
