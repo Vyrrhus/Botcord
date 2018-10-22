@@ -195,6 +195,11 @@ class Twitter:
 	#                COMMANDES                #
 	###########################################
 	
+	# TEST
+	@commands.command(name='test', pass_context=True)
+	async def test(self, ctx):
+		await ctx.channel.send('Channel : {}'.format(ctx.channel.id))
+	
 	# ADD ACCOUNT
 	@commands.command(name='follow', pass_context=True)
 	async def follow(self, ctx, *compte_twitter):
