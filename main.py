@@ -32,6 +32,7 @@ from src.config.settings import data, client
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
+VERSION = '1.0a'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter']
@@ -58,6 +59,10 @@ async def before_any_command(ctx):
 		ctx.global_lock = True
 		print('HAL TRIGGERED')
 
+@client.command()
+async def version(ctx):
+	"""Return version"""
+	await ctx.channel.send('HAL 9000 - version {}'.format(VERSION))
 	
 @client.command()
 async def close(ctx):
