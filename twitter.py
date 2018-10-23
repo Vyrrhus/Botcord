@@ -226,7 +226,7 @@ class Twitter:
 									 description='La liste ci-dessous est suivie sur ce salon, par ordre chronologique.\n?follow <nom_du_compte> : ajouter un compte\n?unfollow <nom_du_compte> : retirer un compte')
 				list_accounts = ['\n'.join(accounts[n:n+10]) for n in range(0, len(accounts), 10)]
 				
-				message, result = await tool.enhance_embed(self.client, ctx, EMB, name='COMPTES', values=list_accounts)
+				message, result = await tool.enhance_embed(ctx, EMB, name='COMPTES', values=list_accounts)
 			
 		# Ajout des comptes à follow
 		else:
@@ -289,7 +289,7 @@ class Twitter:
 								 author_icon='https://pbs.twimg.com/profile_images/1013798240683266048/zRim1x6M_400x400.jpg',
 								 description='Les tweets des comptes ci-dessous sont sauvegardés et les tags de leurs publications surveillés, par ordre chronologique.\n?track <compte_twitter> : ajouter un compte\n?untrack <compte_twitter> : retirer un compte')
 			list_accounts = ['\n'.join(accounts[n:n+10]) for n in range(0, len(accounts), 10)]
-			message, result = await tool.enhance_embed(self.client, ctx, EMB, name='COMPTES', values=list_accounts)
+			message, result = await tool.enhance_embed(ctx, EMB, name='COMPTES', values=list_accounts)
 			return
 		
 		 # Ajout de comptes à écouter
