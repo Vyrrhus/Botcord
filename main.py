@@ -33,7 +33,7 @@ from src.config.settings import data, client
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.0a'
+VERSION = '1.0b'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter']
