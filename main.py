@@ -27,16 +27,11 @@ import asyncio
 import random
 import src.check as check
 import src.tool as tool
-
-from discord.ext.commands import Bot
-from src.config.settings import data
-#from src.action import ACTION
-#from src.note import NOTE
+from src.tool import log
+from src.config.settings import data, client
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-BOT_PREFIX = (data['PREFIX'])
-client = Bot(command_prefix = BOT_PREFIX)
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter']
@@ -46,6 +41,7 @@ extensions = ['twitter']
 async def on_ready():
 	"""Bot fonctionnel"""
 	print('HAL 9000 connecté on {}'.format(datetime.datetime.utcnow().strftime("%d-%m %H:%M:%S")))
+	await log('HAL 9000 connecté', time=True)
 
 @client.before_invoke
 async def before_any_command(ctx):
@@ -67,9 +63,8 @@ async def before_any_command(ctx):
 async def close(ctx):
 	"""Owner can log off"""
 	if ctx.message.author.id == 246321888693977088:
-		# Saving data
-		tool.set_data(data, 'src/config/settings.json')
 		print('logout')
+		await log('HAL 9000 logging out', time=True)
 		await client.close()
 	else:
 		pass
@@ -89,9 +84,9 @@ async def load(ctx, extension):
 		return
 	try:
 		client.load_extension(extension.lower())
-		print('Loaded {}'.format(extension.lower()))
+		await log('Loaded {}'.format(extension.lower()))
 	except Exception as error:
-		print('{} cannot be loaded. [{}]'.format(extension.lower(), error))
+		await log('{} cannot be loaded. [{}]'.format(extension.lower(), error))
 		
 @client.command(name='unload')
 async def unload(ctx, extension):
@@ -104,9 +99,9 @@ async def unload(ctx, extension):
 		return
 	try:
 		client.unload_extension(extension.lower())
-		print('Unloaded {}'.format(extension.lower()))
+		await log('Unloaded {}'.format(extension.lower()))
 	except Exception as error:
-		print('{} cannot be unloaded. [{}]'.format(extension.lower(), error))
+		await log('{} cannot be unloaded. [{}]'.format(extension.lower(), error))
 	
 
 ###########################################
@@ -119,8 +114,8 @@ async def on_command_error(ctx, Exception):
 		channel = ctx.channel.name
 	except:
 		channel = 'DMChannel'
-	print('Command raised in {} by {} (invoke : {} - {})'.format(channel, ctx.author.name, ctx.message.content, ctx.prefix))
-	print('Error : raised Exception : {}'.format(Exception))
+	await log('Command raised in {} by {} (invoke : {} - {})'.format(channel, ctx.author.name, ctx.message.content, ctx.prefix))
+	await log('Error : raised Exception : {}'.format(Exception))
 	
 ###########################################
 #                  RUN                    #

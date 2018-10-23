@@ -2,10 +2,27 @@ import discord
 from datetime import datetime
 import json
 import asyncio
+from src.config.settings import client
 
+# PRINT EQUIVALENT (consola purposes)
+async def log(text, time=False):
+	try:
+		if time:
+			msg = '{} - {}'.format(str(datetime.today())[:-4], text)
+		else:
+			msg = text
+		
+		channel = client.get_channel(504031507191431190)
+		await channel.send(msg)
+	except:
+		print('channel unreachable')
+	return
+
+# CONVERTER
 def str_to_date(str_time):
 	return datetime.strptime(str_time, '%Y-%m-%d %H:%M:%S.%f')
 
+# HANDLING FILES
 def get_data(outfile):
 	try:
 		with open(outfile) as outfile:
@@ -20,6 +37,7 @@ def set_data(data_file, outfile):
 	with open(outfile, 'w') as outfile:
 		json.dump(data_file, outfile, indent=4)
 		
+# TWITTER MODULE FUNCTIONS
 def replace_key(dictionnary, *keys):
 	for element in keys:
 		try:
@@ -98,7 +116,7 @@ def set_embed(**kwargs):
 		pass
 	return EMB
 
-async def enhance_embed(client, ctx, embed, confirm=False, message=None, name='Default name', values=[], **kwargs):
+async def enhance_embed(ctx, embed, confirm=False, message=None, name='Default name', values=[], **kwargs):
 	"""Dynamic embed messages
 	
 	OUTPUT

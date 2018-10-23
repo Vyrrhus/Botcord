@@ -18,6 +18,7 @@ import tweepy
 import src.check as check
 import src.tool as tool
 import src.tweetool as twool
+from src.tool import log
 
 from discord.ext import commands
 from src.config.settings import data
@@ -33,16 +34,17 @@ class Twitter:
 	###########################################	
 	async def listen_accounts(self):
 		await self.client.wait_until_ready()
-		print('TASK')
+		await log('TASK INIT', time=True)
 		# Login
 		api = await twool.login()
-		print('Logged in successfully')
+		await log('twitter api logged in')
 		
 		# Parameters
 		created_since = datetime.utcnow()
 		
 		# Loop
 		while True:
+			await log('TASK ITERATION', time=True)
 			# Save data
 			tool.set_data(data, 'src/config/settings.json')
 			
@@ -55,7 +57,7 @@ class Twitter:
 				target = await twool.get_target(api, element)
 				if not target:
 					"""AFFICHER UN MSG COMME QUOI LA TARGET EXISTE PLUS"""
-					print("{} n'existe plus ???".format(element))
+					await log("{} cannot be found".format(element))
 					continue
 				
 				# Get tweets
@@ -63,10 +65,8 @@ class Twitter:
 				created_since = tool.str_to_date(data['TWITTER']['ACCOUNT'][element]['created_since'])
 				tweets, last_tweet_id = await twool.get_tweet(api, target, since_id=since_id, created_since=created_since)
 				data['TWITTER']['ACCOUNT'][element]['since_id'] = last_tweet_id
-				if not tweets:
-					print('No tweets found')
-				else:
-					print('{} : {} tweets found'.format(element, len(tweets)))
+				if tweets:
+					await log('{} : {} tweets found'.format(element, len(tweets)))
 					
 				# For each tweet :
 				for tweet in tweets:
@@ -148,15 +148,15 @@ class Twitter:
 						# RT
 						if tweet['id'] in retweet_id:
 							tweet['RT'] = True
-							print('{} a RT {}'.format(account, tweet['id']))
+							await log('{} a RT {}'.format(account, tweet['id']))
 						# FAV
 						if tweet['id'] in await twool.get_fav(api, target, tweet['id']):
 							tweet['FAV'] = True
-							print('{} a FAV {}'.format(account, tweet['id']))
+							await log('{} a FAV {}'.format(account, tweet['id']))
 						# Update time
 						isOver = tool.str_to_date(tweet['time']) - datetime.utcnow() >= timedelta(hours=data['TWITTER']['MAX_TIMEDELTA_HOURS'])
 						if isOver:
-							print('Temps écoulé pour {} sur le tweet {}'.format(account, tweet['id']))
+							await log('Temps écoulé pour {} sur le tweet {}'.format(account, tweet['id']))
 						
 						# Check if RT|FAV true or time over
 						if tweet['RT'] or tweet['FAV'] or isOver:
@@ -174,6 +174,7 @@ class Twitter:
 				for key in remove_accounts:
 					data_tags[element]['in_progress'].pop(key)
 			tool.set_data(data_tags, 'src/config/data_tag.json')
+			await log('TASK SLEEPING [{}s]'.format(sleep_time), time=True)
 			await asyncio.sleep(sleep_time)
 		
 		
@@ -184,11 +185,10 @@ class Twitter:
 	# LOCAL CHECK
 	async def __local_check(self, ctx):
 		""" Les commandes de ce cog ne peuvent être utilisées que par un staff"""
-		print('twitter command local check')
 		try:
 			return check.is_staff(ctx.author)
 		except:
-			print('not on the right server')
+			await log('twitter local check failed')
 			return False
 	
 	###########################################
@@ -210,7 +210,7 @@ class Twitter:
 		> ?follow Action_Insoumis : ajoute [Action_Insoumis] à la liste des comptes suivis sur ce salon
 		> ?follow : afficher la liste des comptes suivis sur ce salon
 		"""
-		print('ADD')
+		await log('ADD')
 		# Liste des comptes suivis sur ce salon :
 		if not compte_twitter:
 			accounts = []
@@ -244,7 +244,7 @@ class Twitter:
 	async def remove_twitter(self, ctx, *compte_twitter):
 		"""Retire le compte de la liste des comptes suivis dans ce salon
 		"""
-		print('REMOVE')
+		await log('REMOVE')
 		if not compte_twitter:
 			return
 		
@@ -270,7 +270,7 @@ class Twitter:
 				if not data['TWITTER']['ACCOUNT'][account]['channel']:
 					data['TWITTER']['ACCOUNT'].pop(account)
 			except:
-				print("{} n'est pas dans la liste".format(account))
+				await log("{} n'est pas dans la liste".format(account))
 				pass
 	
 	# TRACK ACCOUNT
@@ -278,7 +278,7 @@ class Twitter:
 	async def track(self, ctx, *compte_twitter):
 		"""Collecte des données sur le compte (chaque tweet + tags publiés)
 		"""
-		print('TRACK')
+		await log('TRACK')
 		#Liste des comptes écoutés :
 		if not compte_twitter:
 			accounts = data['TWITTER']['LISTEN']
@@ -305,7 +305,7 @@ class Twitter:
 	async def untrack(self, ctx, *compte_twitter):
 		"""Retire le compte de la liste des comptes traqués
 		"""
-		print('UNTRACK')
+		await log('UNTRACK')
 		if not compte_twitter:
 			return
 		
@@ -320,7 +320,7 @@ class Twitter:
 			try:
 				data['TWITTER']['LISTEN'].remove(account)
 			except:
-				print("{} n'est pas dans la liste.".format(account))
+				await log("{} n'est pas dans la liste.".format(account))
 				pass
 	
 #	
@@ -334,7 +334,7 @@ class Twitter:
 #		-------
 #		> ?tag Action_Insoumis : récupère la liste complète des tags du compte associé à LISTEN (on peut naviguer entre les pages)
 #		"""
-#		print('TAG')
+#		await log('TAG')
 #		
 #		# Check for the reaction add
 #		def check_reaction(m):
@@ -353,7 +353,7 @@ class Twitter:
 #	async def settings(self, ctx):
 #		return
 #		"""Modifier les settings de TWITTER"""
-#		print('SETTINGS')
+#		await log('SETTINGS')
 #		
 #		# Check for the replies
 #		def check_reply(m):
