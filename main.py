@@ -76,6 +76,11 @@ async def connexion(ctx):
 	await ctx.channel.send('Latency: {}\nIs_ready: {}'.format(client.latency, client.is_ready()))
 	
 @client.command()
+async def evl(ctx, module: str):
+	evl = {t for t in asyncio.Task.all_tasks() if module in repr(t)}
+	print(evl)
+	
+@client.command()
 async def close(ctx):
 	"""Owner can log off"""
 	if ctx.message.author.id == 246321888693977088:
