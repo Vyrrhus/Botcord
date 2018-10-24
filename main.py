@@ -41,10 +41,15 @@ extensions = ['twitter']
 # STARTING EVENT
 @client.event
 async def on_ready():
-	"""Bot fonctionnel"""
-	print('HAL 9000 connecté on {}'.format(datetime.datetime.utcnow().strftime("%d-%m %H:%M:%S")))
-	await log('HAL 9000 connecté', time=True)
+	"""Preparation done"""
+	await client.wait_until_ready()
+	await log('HAL 9000 is ready', time=True)
 
+@client.event
+async def on_resumed():
+	"""Client has resumed session"""
+	await log('HAL 9000 has resumed session', time=True)
+	
 @client.before_invoke
 async def before_any_command(ctx):
 	"""Global hook pour interrompre les commandes (bot capricieux)
@@ -64,6 +69,11 @@ async def before_any_command(ctx):
 async def version(ctx):
 	"""Return version"""
 	await ctx.channel.send('HAL 9000 - version {}'.format(VERSION))
+	
+@client.command()
+async def connexion(ctx):
+	"""Return connection info"""
+	await ctx.channel.send('Latency: {}\nIs_ready: {}'.format(client.latency, client.is_ready()))
 	
 @client.command()
 async def close(ctx):
@@ -135,4 +145,4 @@ if __name__ == '__main__':
 		except Exception as error:
 			print('{} cannot be loaded. [{}]'.format(extension, error))
 			
-client.run(TOKEN)
+client.run(TOKEN, reconnect=False)
