@@ -43,7 +43,7 @@ extensions = ['twitter']
 async def on_ready():
 	"""Preparation done"""
 	await client.wait_until_ready()
-	await log('HAL 9000 is ready', time=True)
+	await log('HAL 9000 is ready\nv{}'.format(VERSION), time=True)
 
 @client.event
 async def on_resumed():
@@ -77,8 +77,7 @@ async def connexion(ctx):
 	
 @client.command()
 async def evl(ctx, module: str):
-	evl = {t for t in asyncio.Task.all_tasks() if module in repr(t)}
-	print(evl)
+	await log({t for t in asyncio.Task.all_tasks() if module in repr(t)})
 	
 @client.command()
 async def close(ctx):
