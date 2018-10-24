@@ -22,6 +22,8 @@ WIP
 - assert toutes les fonctions?
 
 """
+import sys
+import traceback
 import discord
 import datetime
 import asyncio
@@ -33,7 +35,7 @@ from src.config.settings import data, client
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.0d'
+VERSION = '1.0e'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter']
@@ -148,5 +150,9 @@ if __name__ == '__main__':
 			print('{} loaded successfully'.format(extension))
 		except Exception as error:
 			print('{} cannot be loaded. [{}]'.format(extension, error))
-			
-client.run(TOKEN, reconnect=False)
+
+try:
+	client.run(TOKEN, reconnect=False)
+except Exception as e:
+	print('something wrong occured')
+	print('Exception : {} [{}]\n{}'.format(sys.exc_info()[0], sys.exc_info()[1], ' '.join(traceback.format_tb(sys.exc_info()[2]))))
