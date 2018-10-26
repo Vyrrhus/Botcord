@@ -6,16 +6,13 @@ from src.config.settings import client
 
 # PRINT EQUIVALENT (consola purposes)
 async def log(text, time=False):
-	try:
-		if time:
-			msg = '{} - {}'.format(str(datetime.today())[:-4], text)
-		else:
-			msg = text
-		
-		channel = client.get_channel(504031507191431190)
-		await channel.send(msg)
-	except:
-		print('channel unreachable')
+	if time:
+		msg = '{} - {}'.format(str(datetime.today())[:-4], text)
+	else:
+		msg = text
+
+	channel = client.get_channel(504031507191431190)
+	await channel.send(msg)
 	return
 
 # CONVERTER
