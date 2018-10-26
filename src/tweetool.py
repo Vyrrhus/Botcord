@@ -2,6 +2,9 @@ import tweepy
 import asyncio
 import src.tool as tool
 import requests
+import sys
+import traceback
+from src.tool import log
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -22,6 +25,7 @@ async def get_target(api, name):
 		return target
 	except:
 		# Target unreachable
+		await log('Error in get_target() : {}\n{}\n{}'.format(sys.exc_info()[1], sys.exc_info()[0], ' '.join(traceback.format_tb(sys.exc_info()[2]))))
 		return None
 
 async def get_tweet(api, target, since_id=None, created_since=None, exclude_retweets=True, only_retweets=False):
