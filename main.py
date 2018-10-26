@@ -35,10 +35,10 @@ from src.config.settings import data, client
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.1a'
+VERSION = '1.1b'
 
 # EXTENSIONS : loaded by default
-extensions = ['twitter']
+extensions = ['twitter', 'moderation']
 
 # STARTING EVENT
 @client.event

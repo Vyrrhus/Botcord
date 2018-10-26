@@ -96,7 +96,22 @@ class Moderation:
 		""" Notifie les mises en SDD si celles-ci ne sont pas le fait d'une commande.
 			"Libère" la SDD lorsqu'il n'y a plus personne dedans (laisse un message)
 		"""
-		return	
+		
+		# Mise en SDD
+		if not check.is_sdd(before) and check.is_sdd(after):
+			await log('{} a été mis en SDD'.format(before.name), time=True)
+			return
+		elif check.is_sdd(before) and not check.is_sdd(after):
+			lost_role = [role for role in before.roles if role not in set(after.roles)]
+			await log('{} a perdu le rôle {}'.format(after.name, lost_role[0].name))
+			if lost_role[0].id == data['ID']['ROLE_DIALOGUE']:
+				channel = self.client.get_channel(data['ID']['SALON_DIALOGUE'])
+			else:
+				channel = self.client.get_channel(data['ID']['SALON_DISCUSSION'])
+			if not lost_role[0].members:
+				return await channel.send('```LIBRE```')
+		else:
+			return
 		
 def setup(client):
 	client.add_cog(Moderation(client))
