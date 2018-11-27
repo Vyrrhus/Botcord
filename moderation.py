@@ -50,6 +50,10 @@ class Moderation:
 		return
 		
 	"""No command yet"""
+	
+	@commands.command(name='libre', pass_context=True)
+	async def libre(self, ctx):
+		await ctx.channel.send('```LIBRE```')
 		
 	###########################################
 	#                 EVENTS                  #

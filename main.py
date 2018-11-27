@@ -38,7 +38,7 @@ TOKEN = data['TOKEN']
 VERSION = '1.1d'
 
 # EXTENSIONS : loaded by default
-extensions = ['twitter']
+extensions = ['twitter', 'moderation']
 
 # STARTING EVENT
 @client.event
