@@ -35,10 +35,10 @@ from src.config.settings import data, client
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.1b'
+VERSION = '1.1c'
 
 # EXTENSIONS : loaded by default
-extensions = ['twitter', 'moderation']
+extensions = ['twitter']
 
 # STARTING EVENT
 @client.event
@@ -90,6 +90,20 @@ async def close(ctx):
 		await client.close()
 	else:
 		pass
+	
+@client.command(name='data', pass_context=True)
+async def data(self, ctx, data_file):
+	"""Retrieve all data file
+	"""
+	if ctx.message.author.id != 246321888693977088:
+		return
+	await ctx.channel.send('DATA COMMAND')
+	file = 'src/config/{}.json'.format(data_file)
+	try:
+		await ctx.channel.send(content='Here is the file you want : ', file=file)
+	except:
+		await ctx.channel.send('File sending has failed')
+	
 	
 ###########################################
 #            LOAD AND UNLOAD              #
