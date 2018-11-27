@@ -35,7 +35,7 @@ from src.config.settings import data, client
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.1c'
+VERSION = '1.1d'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter']
@@ -100,10 +100,9 @@ async def data(self, ctx, data_file):
 	await ctx.channel.send('DATA COMMAND')
 	file = 'src/config/{}.json'.format(data_file)
 	try:
-		await ctx.channel.send(content='Here is the file you want : ', file=file)
+		await ctx.channel.send("The file you want : ", file=discord.File(file))
 	except:
 		await ctx.channel.send('File sending has failed')
-	
 	
 ###########################################
 #            LOAD AND UNLOAD              #
