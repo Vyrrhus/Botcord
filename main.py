@@ -27,15 +27,22 @@ import traceback
 import discord
 import datetime
 import asyncio
+import logging
 import random
 import src.check as check
 import src.tool as tool
 from src.tool import log
 from src.config.settings import data, client
 
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
+
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.1e'
+VERSION = '1.1f'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
