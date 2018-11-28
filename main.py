@@ -35,7 +35,7 @@ from src.config.settings import data, client
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.1d'
+VERSION = '1.1e'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
@@ -92,7 +92,7 @@ async def close(ctx):
 		pass
 	
 @client.command(name='data', pass_context=True)
-async def data(self, ctx, data_file):
+async def data(ctx, data_file):
 	"""Retrieve all data file
 	"""
 	if ctx.message.author.id != 246321888693977088:
