@@ -23,6 +23,7 @@ WIP
 
 """
 import sys
+import os
 import traceback
 import discord
 import datetime
@@ -34,6 +35,8 @@ import src.tool as tool
 from src.tool import log
 from src.config.settings import data, client
 
+os.rename('discord.log', 'logfile.log')
+
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
@@ -42,7 +45,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.1g'
+VERSION = '1.1h'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
