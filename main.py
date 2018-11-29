@@ -42,7 +42,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.1f'
+VERSION = '1.1g'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
@@ -105,7 +105,7 @@ async def data(ctx, data_file):
 	if ctx.message.author.id != 246321888693977088:
 		return
 	await ctx.channel.send('DATA COMMAND')
-	file = 'src/config/{}.json'.format(data_file)
+	file = 'src/config/{}'.format(data_file)
 	try:
 		await ctx.channel.send("The file you want : ", file=discord.File(file))
 	except:
