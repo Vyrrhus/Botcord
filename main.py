@@ -35,8 +35,12 @@ import src.tool as tool
 from src.tool import log
 from src.config.settings import data, client
 
-os.rename('discord.log', 'logfile.log')
-
+try:
+	os.remove('logfile.log')
+	os.rename('discord.log', 'logfile.log')
+except:
+	pass
+	
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
@@ -45,7 +49,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.1h'
+VERSION = '1.1i'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
@@ -108,7 +112,7 @@ async def data(ctx, data_file):
 	if ctx.message.author.id != 246321888693977088:
 		return
 	await ctx.channel.send('DATA COMMAND')
-	file = 'src/config/{}'.format(data_file)
+	file = '{}'.format(data_file)
 	try:
 		await ctx.channel.send("The file you want : ", file=discord.File(file))
 	except:
