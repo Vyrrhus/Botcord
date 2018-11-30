@@ -49,7 +49,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.4'
+VERSION = '1.4a'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
@@ -109,7 +109,7 @@ async def close(ctx):
 async def getlog(ctx, data_file):
 	"""Retrieve all data file
 	"""
-	if not is_owner(ctx.author):
+	if not check.is_owner(ctx.author):
 		return
 	await ctx.channel.send('DATA COMMAND')
 	file = '{}'.format(data_file)
