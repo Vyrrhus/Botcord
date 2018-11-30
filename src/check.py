@@ -2,6 +2,11 @@ import discord
 
 from src.config.settings import data
 
+def is_owner(member):
+	"""True if is me
+	"""
+	return member.id == 246321888693977088
+
 def in_moderation_channel(channel):
 	""" True if #moderation_animation
 	"""

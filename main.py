@@ -49,10 +49,10 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.2'
+VERSION = '1.3'
 
 # EXTENSIONS : loaded by default
-extensions = ['twitter', 'moderation']
+extensions = []
 
 # STARTING EVENT
 @client.event
@@ -98,11 +98,9 @@ async def evl(ctx, module: str):
 @client.command()
 async def close(ctx):
 	"""Owner can log off"""
-	if ctx.message.author.id == 246321888693977088:
+	if check.is_owner(ctx.author):
 		print('logout')
 		await log('HAL 9000 logging out', time=True)
-		tool.set_data(data, 'src/config/settings.json')
-		await log('DATA SAVED')
 		await client.close()
 	else:
 		pass
@@ -111,7 +109,7 @@ async def close(ctx):
 async def getlog(ctx, data_file):
 	"""Retrieve all data file
 	"""
-	if ctx.message.author.id != 246321888693977088:
+	if not is_owner(ctx.author):
 		return
 	await ctx.channel.send('DATA COMMAND')
 	file = '{}'.format(data_file)
