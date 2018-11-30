@@ -5,7 +5,7 @@ import asyncio
 from src.config.settings import client
 
 # PRINT EQUIVALENT (consola purposes)
-async def log(text, time=False):
+async def log(text, time=False, file=None):
 	if time:
 		msg = '{} - {}'.format(str(datetime.today())[:-4], text)
 	else:

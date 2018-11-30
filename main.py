@@ -49,7 +49,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.1l'
+VERSION = '1.2'
 
 # EXTENSIONS : loaded by default
 extensions = []
@@ -101,12 +101,14 @@ async def close(ctx):
 	if ctx.message.author.id == 246321888693977088:
 		print('logout')
 		await log('HAL 9000 logging out', time=True)
+		tool.set_data(data, 'src/config/settings.json')
+		await log('DATA SAVED')
 		await client.close()
 	else:
 		pass
 	
-@client.command(name='data', pass_context=True)
-async def data(ctx, data_file):
+@client.command(name='getlog', pass_context=True)
+async def getlog(ctx, data_file):
 	"""Retrieve all data file
 	"""
 	if ctx.message.author.id != 246321888693977088:
