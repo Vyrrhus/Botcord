@@ -29,7 +29,7 @@ import traceback
 class Twitter:
 	def __init__(self, client):
 		self.client = client
-		asyncio.get_event_loop().create_task(self.listen_accounts())
+#		asyncio.get_event_loop().create_task(self.listen_accounts())
 	
 	###########################################
 	#            COROUTINE TASK               #
