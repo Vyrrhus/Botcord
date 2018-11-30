@@ -101,6 +101,7 @@ async def close(ctx):
 	if ctx.message.author.id == 246321888693977088:
 		print('logout')
 		await log('HAL 9000 logging out', time=True)
+		tool.set_data(data, 'src/config/settings.json')
 		await client.close()
 	else:
 		pass
