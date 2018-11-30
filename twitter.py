@@ -247,7 +247,7 @@ class Twitter:
 														  'created_since': str(datetime.utcnow())}
 				if not ctx.channel.id in data['TWITTER']['ACCOUNT'][compte]['channel']:
 					data['TWITTER']['ACCOUNT'][compte]['channel'].append(ctx.channel.id)
-			tool.set_data(data, 'src/config/settings2.json')
+			tool.set_data(data, 'src/config/settings.json')
 		
 	# REMOVE ACCOUNT
 	@commands.command(name='unfollow', pass_context=True)
@@ -270,7 +270,7 @@ class Twitter:
 					continue
 			for account in del_list:
 				data['TWITTER']['ACCOUNT'].pop(account)
-			tool.set_data(data, 'src/config/settings2.json')
+			tool.set_data(data, 'src/config/settings.json')
 			return
 		
 		# UNFOLLOW SPECIFIC ACCOUNTS
@@ -283,7 +283,7 @@ class Twitter:
 			except:
 				await log("{} n'est pas dans la liste".format(account))
 				pass
-		tool.set_data(data, 'src/config/settings2.json')
+		tool.set_data(data, 'src/config/settings.json')
 	
 	# TRACK ACCOUNT
 	@commands.command(name='track', pass_context=True)
