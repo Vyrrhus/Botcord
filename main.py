@@ -49,7 +49,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.1k'
+VERSION = '1.1j'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
@@ -106,8 +106,8 @@ async def close(ctx):
 	else:
 		pass
 	
-@client.command(name='datalog', pass_context=True)
-async def datalog(ctx, data_file):
+@client.command(name='data', pass_context=True)
+async def data(ctx, data_file):
 	"""Retrieve all data file
 	"""
 	if ctx.message.author.id != 246321888693977088:
