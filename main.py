@@ -1,4 +1,3 @@
-#!/opt/Botcord/.pyenv/bin/python
 # @author : Vyrrhus
 """
 BOT DE MODÉRATION DU DISCORD INSOUMIS
