@@ -11,7 +11,7 @@ Rajouter d'autres trucs utiles pour remplacer le bot twitter :
 
 import discord
 import asyncio
-import random
+import os
 from datetime import datetime
 from datetime import timedelta
 import tweepy
@@ -29,11 +29,177 @@ import traceback
 class Twitter:
 	def __init__(self, client):
 		self.client = client
+		asyncio.get_event_loop().create_task(self.getting_tweets())
 #		asyncio.get_event_loop().create_task(self.listen_accounts())
 	
 	###########################################
 	#            COROUTINE TASK               #
 	###########################################	
+	
+	async def getting_tweets(self):
+		await self.client.wait_until_ready()
+		await asyncio.sleep(2)
+		print('GETTING TWEETS - STARTING')
+		
+		# PARAMETERS FOR THE WHOLE TASK
+		# Login
+		await log('LOGIN TWITTER API', time=True)
+		api = await twool.login()
+		
+		created_since = datetime.utcnow()
+		
+		while True:
+			# Sleeping time
+			sleep_time = tool.get_data('src/config/tweetings.json')['TWEET_SLEEP_TIME']
+			
+			# Merging data
+			data = tool.get_data('src/config/twitter/data.json')
+			data_track = tool.get_data('src/config/twitter/tweet.json')
+			try:
+				temp_data = tool.get_data('src/config/twitter/temp_data.json')
+				for element in temp_data:
+					# ADD
+					if element['type'] == 'add':
+						print('add {} - {}'.format(element['account'], element['channel']))
+						if element['account'] not in data:
+							print('create')
+							data[element['account']] = {'channel': element['channel'],
+													    'since_id': None,
+													    'created_since': str(datetime.utcnow())
+													   }
+						else:
+							print('append')
+							data[element['account']]['channel'] = list(set(data[element['account']['channel']] + element['channel']))
+					# REMOVE
+					elif element['type'] == 'remove':
+						print('remove {} - {}'.format(element['account'], element['channel']))
+						if element['account'] in data:
+							print('specific')
+							try:
+								data[element['account']]['channel'].remove(element['channel'])
+								if not data[element['account']]['channel']:
+									print('no channel anymore')
+									data.pop(element['account'])
+							except Exception as e:
+								print('channel not found for this account')
+								pass
+						elif element['account'] == 'all':
+							print('all')
+							list_to_del = []
+							for account in data:
+								try:
+									data[account]['channel'].remove(element['channel'])
+									print('{} suppr'.format(account))
+									if not data[account]['channel']:
+										print('no channel anymore')
+										list_to_del.append(account)
+								except:
+									continue
+							for account in del_list:
+								data.pop(account)
+					# TRACK
+					elif element['type'] == 'track':
+						print('track {}'.format(element['account']))
+						if element['account'] not in data_track:
+							print('track ajouté')
+							data_track[element['account']] = {}
+					# UNTRACK
+					elif element['type'] == 'untrack':
+						print('untrack {}'.format(element['account']))
+						if element['account'] in data_track:
+							print('untracké')
+							data_track.pop(element['account'])
+			except Exception as e:
+				print('no temp file : \n{}'.format(e))
+				pass
+			
+			# List of accounts for the current iteration
+			accounts = [element for element in data]
+			
+			for account in accounts:
+				# SEARCHING TARGET
+				target = await twool.get_target(api, account)
+				
+				if not target:
+					await log('TARGET UNREACHABLE : {}\nFollowed in {}'.format(account, ['{} '.format(element) for element in data[account]['channel']]))
+					continue
+					
+				since_id = data[account]['since_id']
+				if not since_id:
+					created_since = tool.str_to_date(data[account]['created_since'])
+					
+				# GET TWEETS
+				while True:
+					try:
+						tweets, until_id = await twool.get_tweet(api, target, since_id=since_id, created_since=created_since)
+						if tweets:
+							await log('{} - {} tweets found'.format(account, len(tweets)))
+						data[account]['since_id'] = until_id
+						break
+					except Exception as e:
+						await log('TWEETS CANNOT BE RETRIEVED: SLEEP [60]s\n{}'.format(e), time=True)
+						await asyncio.sleep(60)
+						sleep_time -= 60
+				
+				# PROCESS TWEETS
+				for tweet in tweets:
+					# SET EMBED
+					try:
+						img = tweet.entities['media'][0]['media_url']
+					except:
+						img = None
+					EMB = tool.set_embed(color=0xffffff,
+										 title='https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str),
+										 title_url='https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str),
+										 author='@{}'.format(tweet.user.screen_name),
+										 author_url='https://twitter.com/{}'.format(tweet.user.screen_name),
+										 author_icon=tweet.user.profile_image_url,
+										 timestamp=tweet.created_at,
+										 image=img,
+										 fields=[tool.set_field(name='Nouveau tweet : ', value=tweet.full_text, inline=True)])
+					
+					# TRACK TAGS IF NECESSARY
+					if account in data_track:
+						# APPEND DATA
+						data_track[account][tweet.id_str] = {'date': str(tweet.created_at),
+															 'link': 'https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str),
+															 'text': tweet.full_text
+															}
+						try:
+							tags = await twool.get_tags(tweet)
+							data_track[account][tweet.id_str]['tags'] = tags
+						except Exception as e:
+							await log('TAG EXCEPTION : {}'.format(e), time=True)
+							pass
+						
+						"""
+							create temp file for tags
+						"""
+						
+						# STORE DATA
+						tool.set_data(data_track, 'src/config/twitter/tweet.json')
+						
+					
+					# POST TO TEXTCHANNEL(S)
+					textchannels = [self.client.get_channel(element) for element in data[account]['channel']]
+					for textchannel in textchannels:
+						if not textchannel:
+#							await log('channel not found for {}'.format(account), time=True)
+							continue
+						await textchannel.send(content=None, embed=EMB)
+		
+			# Save data
+			tool.set_data(data, 'src/config/twitter/data.json')
+			tool.set_data(data_track, 'src/config/twitter/tweet.json')
+			os.remove('src/config/twitter/temp_data.json')
+			
+			# Sleep
+			if sleep_time < 0:
+				sleep_time = tool.get_data('src/config/tweetings.json')['TWEET_MIN_SLEEP_TIME']
+			await log('SLEEPING [{}s]'.format(sleep_time), time=True)
+			await asyncio.sleep(sleep_time)
+			await log('SLEEP OVER', time=True)
+					
 	async def listen_accounts(self):
 		await self.client.wait_until_ready()
 		await log('TASK INIT', time=True)
@@ -239,15 +405,20 @@ class Twitter:
 			
 		# Ajout des comptes à follow
 		else:
+			try:
+				temp_data = tool.get_data('src/config/twitter/temp_data.json')
+			except:
+				temp_data = []
+			
 			for compte in compte_twitter:
 				compte = compte.lower()
-				if not compte in data['TWITTER']['ACCOUNT']:
-					data['TWITTER']['ACCOUNT'][compte] = {'channel': [],
-														  'since_id': None,
-														  'created_since': str(datetime.utcnow())}
-				if not ctx.channel.id in data['TWITTER']['ACCOUNT'][compte]['channel']:
-					data['TWITTER']['ACCOUNT'][compte]['channel'].append(ctx.channel.id)
-			tool.set_data(data, 'src/config/settings.json')
+				temp_data.append({'type': 'add',
+								  'channel': ctx.channel.id,
+								  'account': compte
+								 })
+			tool.set_data(temp_data, 'src/config/twitter/temp_data.json')
+				
+					
 		
 	# REMOVE ACCOUNT
 	@commands.command(name='unfollow', pass_context=True)
@@ -258,32 +429,29 @@ class Twitter:
 		if not compte_twitter:
 			return
 		
+		try:
+			temp_data = tool.get_data('src/config/twitter/temp_data.json')
+		except:
+			temp_data = []
+		
 		# UNFOLLOW ALL
 		if compte_twitter[0] in ['all', '*']:
-			del_list = []
-			for account in data['TWITTER']['ACCOUNT']:
-				try:
-					data['TWITTER']['ACCOUNT'][account]['channel'].remove(ctx.channel.id)
-					if not data['TWITTER']['ACCOUNT'][account]['channel']:
-						del_list.append(account)
-				except:
-					continue
-			for account in del_list:
-				data['TWITTER']['ACCOUNT'].pop(account)
-			tool.set_data(data, 'src/config/settings.json')
+			temp_data.append({'type': 'remove',
+							  'channel': ctx.channel.id,
+							  'account': 'all'
+							 })	
+			tool.set_data(temp_data, 'src/config/twitter/temp_data.json')
 			return
 		
 		# UNFOLLOW SPECIFIC ACCOUNTS
 		for account in compte_twitter:
 			account = account.lower()
-			try:
-				data['TWITTER']['ACCOUNT'][account]['channel'].remove(ctx.channel.id)
-				if not data['TWITTER']['ACCOUNT'][account]['channel']:
-					data['TWITTER']['ACCOUNT'].pop(account)
-			except:
-				await log("{} n'est pas dans la liste".format(account))
-				pass
-		tool.set_data(data, 'src/config/settings.json')
+			temp_data.append({'type': 'remove',
+							  'channel': ctx.channel.id,
+							  'account': account
+							 })
+			
+		tool.set_data(temp_data, 'src/config/twitter/temp_data.json')
 	
 	# TRACK ACCOUNT
 	@commands.command(name='track', pass_context=True)
@@ -306,14 +474,17 @@ class Twitter:
 		
 		 # Ajout de comptes à écouter
 		else:
+			try:
+				temp_data = tool.get_data('src/config/twitter/temp_data.json')
+			except:
+				temp_data = []
+			
 			for compte in compte_twitter:
 				compte = compte.lower()
-				if not compte in data['TWITTER']['LISTEN']:
-					data['TWITTER']['LISTEN'].append(compte)
-					if not compte in data['TWITTER']['ACCOUNT']:
-						data['TWITTER']['ACCOUNT'][compte] = {'channel': ['tracking'],
-															  'since_id': None,
-															  'created_since': str(datetime.utcnow())}
+				temp_data.append({'type': 'track',
+								  'account': compte
+								 })
+			tool.set_data(temp_data, 'src/config/twitter/temp_data.json')
 			return
 				
 	# UNTRACK ACCOUNT
@@ -325,30 +496,27 @@ class Twitter:
 		if not compte_twitter:
 			return
 		
+		try:
+			temp_data = tool.get_data('src/config/twitter/temp_data.json')
+		except:
+			temp_data = []
+		
 		# UNTRACK ALL
 		if compte_twitter[0] in ['all', '*']:
-			data['TWITTER']['LISTEN'] = []
-			for compte in data['TWITTER']['ACCOUNT']:
-				if 'tracking' in data['TWITTER']['ACCOUNT'][compte]['channel']:
-					data['TWITTER']['ACCOUNT'][compte]['channel'].remove('tracking')
-					if not data['TWITTER']['ACCOUNT'][compte]['channel']:
-						data['TWITTER']['ACCOUNT'].pop(compte)
+			temp_data.append({'type': 'untrack',
+							  'account': 'all'
+							 })
+			tool.set_data(temp_data, 'src/config/twitter/temp_data.json')
 			return
 		
 		# UNTRACK SPECIFIC ACCOUNTS
 		for account in compte_twitter:
 			account = account.lower()
-			try:
-				data['TWITTER']['LISTEN'].remove(account)
-				try:
-					data['TWITTER']['ACCOUNT'][account]['channel'].remove('tracking')
-					if not data['TWITTER']['ACCOUNT'][account]['channel']:
-						data['TWITTER']['ACCOUNT'].pop(account)
-				except:
-					pass
-			except:
-				await log("{} n'est pas dans la liste.".format(account))
-				pass
+			temp_data.append({'type': 'untrack',
+							  'account': account
+							 })
+			
+		tool.set_data(temp_data, 'src/config/twitter/temp_data.json')
 	
 #	
 #	# GET TAG LIST

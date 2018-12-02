@@ -12,10 +12,13 @@ from src.config.settings import data
 
 async def login():
 	# Set API twitter
-	auth = tweepy.OAuthHandler(consumer_key = data['TWITTER']['AUTH']['CONSUMER_KEY'], 
-							   consumer_secret = data['TWITTER']['AUTH']['CONSUMER_SECRET'])
-	auth.set_access_token(key = data['TWITTER']['AUTH']['ACCESS_TOKEN_KEY'], 
-						  secret = data['TWITTER']['AUTH']['ACCESS_TOKEN_SECRET'])
+	
+	data = tool.get_data('src/config/tweetings.json')
+	
+	auth = tweepy.OAuthHandler(consumer_key = data['AUTH']['CONSUMER_KEY'], 
+							   consumer_secret = data['AUTH']['CONSUMER_SECRET'])
+	auth.set_access_token(key = data['AUTH']['ACCESS_TOKEN_KEY'], 
+						  secret = data['AUTH']['ACCESS_TOKEN_SECRET'])
 	api = tweepy.API(auth)
 	return api
 

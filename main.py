@@ -48,7 +48,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.4c'
+VERSION = '1.5'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
@@ -57,7 +57,6 @@ extensions = ['twitter', 'moderation']
 @client.event
 async def on_ready():
 	"""Preparation done"""
-	await client.wait_until_ready()
 	await log('HAL 9000 is ready\nv{}'.format(VERSION), time=True)
 
 @client.event
