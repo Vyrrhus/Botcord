@@ -49,7 +49,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '2.0'
+VERSION = '2.1'
 
 # EXTENSIONS : loaded by default
 extensions = []
@@ -129,6 +129,21 @@ async def getdir(ctx, path):
 		await ctx.channel.send('{}'.format(['{} '.format(e) for e in list_file]))
 	except:
 		pass
+	
+@client.command(name='sendlog', pass_context=True)
+async def sendlog(ctx, path):
+	"""Send file to path dir
+	"""
+	if not check.is_owner(ctx.author):
+		return
+	await ctx.channel.send('SENDLOG COMMAND')
+	file = ctx.message.attachments
+	for element in file:
+		print(str(element))
+		try:
+			await element.save(path)
+		except:
+			pass
 	
 ###########################################
 #            LOAD AND UNLOAD              #
