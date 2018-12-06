@@ -12,10 +12,13 @@ from src.config.settings import data
 
 async def login():
 	# Set API twitter
-	auth = tweepy.OAuthHandler(consumer_key = data['TWITTER']['AUTH']['CONSUMER_KEY'], 
-							   consumer_secret = data['TWITTER']['AUTH']['CONSUMER_SECRET'])
-	auth.set_access_token(key = data['TWITTER']['AUTH']['ACCESS_TOKEN_KEY'], 
-						  secret = data['TWITTER']['AUTH']['ACCESS_TOKEN_SECRET'])
+	
+	data = tool.get_data('src/config/tweetings.json')
+	
+	auth = tweepy.OAuthHandler(consumer_key = data['AUTH']['CONSUMER_KEY'], 
+							   consumer_secret = data['AUTH']['CONSUMER_SECRET'])
+	auth.set_access_token(key = data['AUTH']['ACCESS_TOKEN_KEY'], 
+						  secret = data['AUTH']['ACCESS_TOKEN_SECRET'])
 	api = tweepy.API(auth)
 	return api
 
@@ -36,6 +39,7 @@ async def get_tweet(api, target, since_id=None, created_since=None, exclude_retw
 		cursor = tweepy.Cursor(api.user_timeline, user_id=target.id, exclude_replies=True, tweet_mode="extended")
 	
 	for status in cursor.items():
+		await asyncio.sleep(0)
 		if not since_id:
 			try:
 				if status.created_at < created_since:
@@ -61,6 +65,26 @@ async def get_tweet(api, target, since_id=None, created_since=None, exclude_retw
 		# No status found
 		return tweets, since_id
 	
+async def get_retweets(api, target, since_id, list_id=None):
+	retweets, until_id = await get_tweet(api, target, since_id=since_id, exclude_retweets=False, only_retweets=True)
+	if not list_id:
+		return retweets, until_id
+	
+	matching_retweets = []
+	for retweet in retweets:
+		print(retweet.full_text)
+		await asyncio.sleep(0)
+		if hasattr(retweet, 'retweeted_status'):
+			id_str = retweet.retweeted_status.id_str
+		elif hasattr(retweet, 'quoted_status'):
+			id_str = retweet.quoted_status.id_str
+		else:
+			continue
+		if id_str in list_id:
+			matching_retweets.append(id_str)
+	
+	return matching_retweets, until_id
+	
 async def get_tags(tweet):
 	link = 'https://twitter.com/{}/status/{}'.format(tweet.user.screen_name, tweet.id_str)
 	rq = requests.get(link)
@@ -74,11 +98,12 @@ async def get_tags(tweet):
 	tags = list(set(tags))
 	return tags
 
-async def get_fav(api, target, tweet_id):
+async def get_fav(api, target, list_id):
 	fav = []
-	cursor = tweepy.Cursor(api.favorites, user_id=target.id, since_id=tweet_id-1, max_id=tweet_id+1)
-	
-	for status in cursor.items():
-		fav.append(status.id)
+	for tweet in list_id:
+		await asyncio.sleep(0)
+		cursor = tweepy.Cursor(api.favorites, user_id=target.id, since_id=int(tweet)-1, max_id=int(tweet)+1)
+		for status in cursor.items():
+			fav.append(status.id)
 		
 	return fav

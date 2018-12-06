@@ -49,7 +49,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.5'
+VERSION = '2.0'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
@@ -58,7 +58,6 @@ extensions = ['twitter', 'moderation']
 @client.event
 async def on_ready():
 	"""Preparation done"""
-	await client.wait_until_ready()
 	await log('HAL 9000 is ready\nv{}'.format(VERSION), time=True)
 
 @client.event
@@ -101,7 +100,7 @@ async def close(ctx):
 	if check.is_owner(ctx.author):
 		print('logout')
 		await log('HAL 9000 logging out', time=True)
-		await client.close()
+		await client.logout()
 	else:
 		pass
 	
@@ -117,7 +116,7 @@ async def getlog(ctx, data_file):
 		await ctx.channel.send("The file you want : ", file=discord.File(file))
 	except:
 		await ctx.channel.send('File sending has failed')
-		
+
 @client.command(name='getdir', pass_context=True)
 async def getdir(ctx, path):
 	"""List all files within dir
@@ -195,4 +194,4 @@ try:
 	client.run(TOKEN, reconnect=False)
 except Exception as e:
 	print('something wrong occured')
-	print('Exception : {} [{}]\n{}'.format(sys.exc_info()[0], sys.exc_info()[1], ' '.join(traceback.format_tb(sys.exc_info()[2]))))
+	traceback.print_exc()
