@@ -12,7 +12,7 @@ async def log(text, time=False, file=None):
 	else:
 		msg = text
 
-	channel = client.get_channel(504580845340983296)
+	channel = client.get_channel(504031507191431190)
 	await channel.send(msg)
 	return
 
