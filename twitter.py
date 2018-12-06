@@ -399,7 +399,6 @@ class Twitter:
 			return check.is_staff(ctx.author)
 		except:
 			await log('twitter local check failed')
-			return True
 			return False
 	
 	###########################################
