@@ -6,6 +6,7 @@ from src.config.settings import client
 
 # PRINT EQUIVALENT (consola purposes)
 async def log(text, time=False, file=None):
+	await asyncio.sleep(0)
 	if time:
 		msg = '{} - {}'.format(str(datetime.today())[:-4], text)
 	else:
@@ -20,13 +21,13 @@ def str_to_date(str_time):
 	return datetime.strptime(str_time, '%Y-%m-%d %H:%M:%S.%f')
 
 # HANDLING FILES
-def get_data(outfile):
+def get_data(outfile, default={}):
 	try:
 		with open(outfile) as outfile:
 			data_file = json.load(outfile)
 	except:
 		# File doesn't exist yet
-		data_file = {}
+		data_file = default
 		set_data(data_file, outfile)
 	return data_file
 
