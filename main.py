@@ -49,10 +49,10 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '2.1'
+VERSION = '2.1a'
 
 # EXTENSIONS : loaded by default
-extensions = []
+extensions = ['moderation', 'twitter']
 
 # STARTING EVENT
 @client.event
