@@ -49,7 +49,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.4c'
+VERSION = '1.5'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
@@ -117,6 +117,19 @@ async def getlog(ctx, data_file):
 		await ctx.channel.send("The file you want : ", file=discord.File(file))
 	except:
 		await ctx.channel.send('File sending has failed')
+		
+@client.command(name='getdir', pass_context=True)
+async def getdir(ctx, path):
+	"""List all files within dir
+	"""
+	if not check.is_owner(ctx.author):
+		return
+	await ctx.channel.send('DIR COMMAND')
+	list_file = os.listdir(path)
+	try:
+		await ctx.channel.send('{}'.format(['{} '.format(e) for e in list_file]))
+	except:
+		pass
 	
 ###########################################
 #            LOAD AND UNLOAD              #
