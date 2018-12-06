@@ -48,7 +48,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '1.5'
+VERSION = '2.0'
 
 # EXTENSIONS : loaded by default
 extensions = ['twitter', 'moderation']
@@ -99,7 +99,7 @@ async def close(ctx):
 	if check.is_owner(ctx.author):
 		print('logout')
 		await log('HAL 9000 logging out', time=True)
-		await client.close()
+		await client.logout()
 	else:
 		pass
 	
@@ -180,4 +180,4 @@ try:
 	client.run(TOKEN, reconnect=False)
 except Exception as e:
 	print('something wrong occured')
-	print('Exception : {} [{}]\n{}'.format(sys.exc_info()[0], sys.exc_info()[1], ' '.join(traceback.format_tb(sys.exc_info()[2]))))
+	traceback.print_exc()
