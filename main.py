@@ -144,6 +144,18 @@ async def sendlog(ctx, path):
 			await element.save(path)
 		except:
 			pass
+		
+@client.command(name='create_dir', pass_context=True)
+async def create_dir(ctx, path):
+	"""Create dir
+	"""
+	if not check.is_owner(ctx.author):
+		return
+	await ctx.channel.send('CREATE DIR COMMAND')
+	try:
+		os.mkdir(path)
+	except:
+		pass
 	
 ###########################################
 #            LOAD AND UNLOAD              #
