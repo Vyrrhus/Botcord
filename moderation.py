@@ -73,6 +73,53 @@ class Moderation:
 		# Sauvegarde du log
 		pass
 	
+	# KICK COMMAND
+	@commands.command(name='kick', pass_context=True)
+	async def kick(self, ctx, target: discord.Member, *, text):
+		""" Kick un user (message optionnel)
+		"""
+		# Checks
+		if check.is_moderator(target):
+			await log('KICK - target role onvalide')
+			return
+		if not check.kick_allowed(target, ctx.message.author) or not check.kick_allowed(target, ctx.guild.me):
+			await log('KICK - permission de kick refusée')
+			return
+		
+		# Séparation du text en message + auditlog
+		if text.find('[') == -1:
+			message = None
+			auditlog = text
+		else:
+			message = text[text.find('[')+1:text.find(']')]
+			auditlog = text[text.find(']')+1::]
+			if auditlog == '':
+				auditlog = None
+		if not auditlog:
+			await log('KICK - auditlog not given')
+			return await ctx.channel.send("Auditlog manquant : ?kick [message envoyé] auditlog")
+		if len(auditlog) > 512:
+			await log('KICK - auditlog too long (512 char max)')
+			return await ctx.channel.send("Auditlog trop long *({}/512 caractères max)*".format(len(auditlog)))
+		
+		# ACTION
+		action = ACTION('Kick', target, ctx.message.author, ctx.message.created_at, message=message, reason=auditlog)
+		EMB = action.embed(self.client, 0x995500)
+		
+		# Notification aux modérateurs
+		await self.client.get_channel(data['ID']['SALON_LOG']).send(content=None, embed=EMB)
+		await ctx.channel.send('{} a été kick du serveur :hammer:'.format(target.mention))
+		
+		# Kick
+		if message:
+			await target.send(data['TEXT']['KICK']['with_msg'].format(message))
+		else:
+			await target.send(data['TEXT']['KICK']['with_no_msg'])
+		await target.kick(reason=auditlog)
+		
+		# Sauvegarde du log
+		pass
+		
 	@commands.command(name='libre', pass_context=True)
 	async def libre(self, ctx):
 		await ctx.channel.send('```LIBRE```')
@@ -98,7 +145,7 @@ class Moderation:
 		  Pour y palier, on a mis un délai de 5s avant lecture de l'auditlog, puis on récupère les 20 dernières entrées (en supposant en cas de raid jusqu'à 20 kick / bans en 5s) pour vérifier si l'une d'entre elle correspond.
 		  C'est à dire si l'entrée a été faite il y a moins de 5s, correspond à un kick / ban et concerne l'utilisateur souhaité.
 		"""
-		print('{} a quitté le serveur'.format(member.name), time=True)
+		await log('{} a quitté le serveur'.format(member.name), time=True)
 		
 		
 	# ON RAW REACTION ADD
