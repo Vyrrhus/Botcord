@@ -34,8 +34,6 @@ class Twitter:
 		asyncio.get_event_loop().create_task(self.getting_tweets())
 		asyncio.get_event_loop().create_task(self.checking_tags())
 
-
-	
 	###########################################
 	#            COROUTINE TASK               #
 	###########################################
