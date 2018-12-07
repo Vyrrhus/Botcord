@@ -153,6 +153,8 @@ class Moderation:
 		
 		# Kick
 		async for entry in guild.audit_logs(action=discord.AuditLogAction.kick, limit=20):
+			await log('KICK : auditlog timer')
+			await log(str(datetime.utcnow()-entry.created_at))
 			if datetime.utcnow() - entry.created_at < timedelta(0,10):
 				break
 			if entry.target == member:
