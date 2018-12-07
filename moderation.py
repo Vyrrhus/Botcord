@@ -55,7 +55,7 @@ class Moderation:
 		""" Envoie un warn à l'user
 		"""
 		# Checks
-		if ctx.is_moderator(target):
+		if check.is_moderator(target):
 			await log('WARN - target role invalide')
 			return
 		
