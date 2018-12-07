@@ -180,3 +180,15 @@ async def enhance_embed(ctx, embed, confirm=False, message=None, name='Default n
 							   embed=embed.set_footer(text='Mettez une réaction pour changer de page. Page {} / {}'.format(current_page, max_page)))
 		except:
 			return message, None
+		
+def extract_text(text):
+	if text.find('[') == -1:
+		bracket = None
+		msg = text
+	else:
+		msg = text[text.find('[')+1:text.find(']')]
+		bracket = text[text.find(']')+1::]
+		if bracket == '':
+			bracket = None
+			
+	return msg, bracket

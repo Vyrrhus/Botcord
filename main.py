@@ -49,7 +49,7 @@ logger.addHandler(handler)
 
 # GLOBAL SETTINGS
 TOKEN = data['TOKEN']
-VERSION = '2.1a'
+VERSION = '2.2'
 
 # EXTENSIONS : loaded by default
 extensions = ['moderation', 'twitter']

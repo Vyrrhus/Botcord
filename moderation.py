@@ -16,6 +16,7 @@ from src.action import ACTION
 class Moderation:
 	def __init__(self, client):
 		self.client = client
+		self.exit_lock = False
 		
 	###########################################
 	#            COROUTINE TASK               #
@@ -87,14 +88,7 @@ class Moderation:
 			return
 		
 		# Séparation du text en message + auditlog
-		if text.find('[') == -1:
-			message = None
-			auditlog = text
-		else:
-			message = text[text.find('[')+1:text.find(']')]
-			auditlog = text[text.find(']')+1::]
-			if auditlog == '':
-				auditlog = None
+		message, auditlog = tool.extract_text(text)
 		if not auditlog:
 			await log('KICK - auditlog not given')
 			return await ctx.channel.send("Auditlog manquant : ?kick [message envoyé] auditlog")
@@ -146,6 +140,71 @@ class Moderation:
 		  C'est à dire si l'entrée a été faite il y a moins de 5s, correspond à un kick / ban et concerne l'utilisateur souhaité.
 		"""
 		await log('{} a quitté le serveur'.format(member.name), time=True)
+		
+		# Commande utilisée:
+		if self.exit_lock:
+			self.exit_lock = False
+			return await log('verrou actif: commande')
+		
+		guild = self.client.get_guild(data['ID']['GUILD'])
+		if not check.auditlog_allowed(guild.me):
+			return await log("HAL 9000 n'a pas accès à l'auditlog")
+		await asyncio.sleep(5)
+		
+		# Kick
+		async for entry in guild.audit_logs(action=discord.AuditLogAction.kick, limit=20):
+			if datetime.utcnow() - entry.created_at < timedelta(0,10):
+				break
+			if entry.target == member:
+				await log("KICK manuel")
+				action = ACTION('Kick', entry.target, entry.user, entry.created_at, reason=entry.reason)
+				EMB = action.embed(self.client, 0x995500)
+				await self.client.get_channel(data['ID']['SALON_LOG']).send(content=None, embed=EMB)
+				await self.client.get_channel(data['ID']['SALON_MODERATION']).send(':hammer: {} a été kick du serveur.'.format(str(entry.target)))
+				
+				# Check SDD
+				if check.is_sdd(member):
+					for role in member.roles:
+						if role.id == data['ID']['ROLE_DISCUSSION'] and not role.members:
+							channel = self.client.get_channel(data['ID']['SALON_DISCUSSION'])
+							await channel.send('```LIBRE```')
+						if role.id == data['ID']['ROLE_DIALOGUE'] and not role.members:
+							channel = self.client.get_channel(data['ID']['SALON_DIALOGUE'])
+							await channel.send('```LIBRE```')
+				return
+		
+		# Ban
+		async for entry in guild.audit_logs(action=discord.AuditLogAction.ban, limit=20):
+			if datetime.utcnow() - entry.created_at < timedelta(0,10):
+				break
+			if entry.target == member:
+				await log('BAN manuel')
+				action = ACTION('Ban', entry.target, entry.user, entry.created_at, reason=entry.reason)
+				EMB = action.embed(self.client, 0x550000)
+				await self.client.get_channel(data['ID']['SALON_LOG']).send(content=None, embed=EMB)
+				await self.client.get_channel(data['ID']['SALON_MODERATION']).send(':skull_crossbones: {} a été ban du serveur.'.format(str(entry.target)))
+				
+				# Check SDD
+				if check.is_sdd(member):
+					for role in member.roles:
+						if role.id == data['ID']['ROLE_DISCUSSION'] and not role.members:
+							channel = self.client.get_channel(data['ID']['SALON_DISCUSSION'])
+							await channel.send('```LIBRE```')
+						if role.id == data['ID']['ROLE_DIALOGUE'] and not role.members:
+							channel = self.client.get_channel(data['ID']['SALON_DIALOGUE'])
+							await channel.send('```LIBRE```')
+				return
+		
+		# Départ volontaire
+		if check.is_sdd(member):
+			for role in member.roles:
+				if role.id == data['ID']['ROLE_DISCUSSION'] and not role.members:
+					channel = self.client.get_channel(data['ID']['SALON_DISCUSSION'])
+					await channel.send('```LIBRE```')
+				if role.id == data['ID']['ROLE_DIALOGUE'] and not role.members:
+					channel = self.client.get_channel(data['ID']['SALON_DIALOGUE'])
+					await channel.send('```LIBRE```')
+			await self.client.get_channel(data['ID']['SALON_MODERATION']).send(':no_pedestrians: {} a pris la fuite de la SDD !'.format(member.mention))
 		
 		
 	# ON RAW REACTION ADD
