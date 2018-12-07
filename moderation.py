@@ -10,7 +10,7 @@ from src.tool import log
 
 from discord.ext import commands
 from src.config.settings import data
-#from src.action import ACTION
+from src.action import ACTION
 #from src.note import NOTE
 
 class Moderation:
@@ -48,8 +48,30 @@ class Moderation:
 		""" BEFORE HOOK FUNC
 		"""
 		return
+
+	# WARN COMMAND
+	@commands.command(name='warn', pass_context=True)
+	async def warn(self, ctx, target:discord.Member, *, text):
+		""" Envoie un warn à l'user
+		"""
+		# Checks
+		if ctx.is_moderator(target):
+			await log('WARN - target role invalide')
+			return
 		
-	"""No command yet"""
+		# Action
+		action = ACTION('Warn', target, ctx.message.author, ctx.message.created_at, message=text)
+		EMB = action.embed(self.client, 0xaa8800)
+		
+		# Notification aux modérateurs
+		await self.client.get_channel(data['ID']['SALON_LOG']).send(content=None, embed=EMB)
+		await ctx.channel.send('{} a reçu un warn :telephone:'.format(target.mention))
+		
+		# Envoi du warn
+		await target.send(data['TEXT']['WARN'].format(text))
+		
+		# Sauvegarde du log
+		pass
 	
 	@commands.command(name='libre', pass_context=True)
 	async def libre(self, ctx):
