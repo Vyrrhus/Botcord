@@ -1,7 +1,6 @@
-import discord
 import datetime
 import src.tool as tool
-from src.config.settings import data
+from src.config.settings import GUILD_ID
 
 class ACTION:
 	"""Représente une action de modération (kick, warn, ban, log).
@@ -65,7 +64,7 @@ class ACTION:
 		self.num = num
 		
 	def userinfo(self, client, user):
-		guild = client.get_guild(data['ID']['GUILD'])
+		guild = client.get_guild(GUILD_ID)
 		# Member
 		if guild.get_member(user):
 			user = guild.get_member(user)
