@@ -36,31 +36,38 @@ class ACTION:
 	 
 	__slots__ = ['lib', 'user', 'author', 'time', 'reason', 'message', 'log_id', 'log_channel', 'log_content', 'num']
 	
-	def __init__(self, lib, user, author, time, reason=None, message=None, log=None):
+	def __init__(self, lib, user, author, time, reason=None, message=None, log=None, num=None, user_id=None, author_id=None, log_id=None, log_channel=None, log_content=None):
 		
 		# Attributs déclarés
 		self.lib = lib
-		self.user = user.id
-		self.author = author.id
+		if not user_id:
+			self.user = user.id
+		else:
+			self.user = user_id
+		if not author_id:
+			self.author = author.id
+		else:
+			self.author = author_id
 		self.time = time
 		self.reason = reason
 		self.message = message
 		if not log:
-			self.log_id = None
-			self.log_channel = None
-			self.log_content = None
+			self.log_id = log_id
+			self.log_channel = log_channel
+			self.log_content = log_content
 		else:
 			self.log_id = log.id
 			self.log_channel = log.channel.id
 			self.log_content = log.content
 		
 		# Num
-		with open('src/config/moderation/num.txt', 'r+') as file:
-			num = int(file.read()) + 1
-			file.seek(0)
-			file.truncate()
-			file.write(str(num))
-			print('----- {} N°{} créée !'.format(self.lib, str(num)))
+		if not num:
+			with open('src/config/moderation/num.txt', 'r+') as file:
+				num = int(file.read()) + 1
+				file.seek(0)
+				file.truncate()
+				file.write(str(num))
+				print('----- {} N°{} créée !'.format(self.lib, str(num)))		
 		self.num = num
 		
 	def userinfo(self, client, user):
@@ -121,3 +128,17 @@ class ACTION:
 							 fields=field_list)
 		
 		return EMB
+	
+	def save(self, src):
+		data = tool.get_data(src)
+		data[self.num] = {"lib": self.lib,
+						  "user": self.user,
+						  "author": self.author,
+						  "time": str(self.time),
+						  "reason": self.reason,
+						  "message": self.message,
+						  "log_id": self.log_id,
+						  "log_channel": self.log_channel,
+						  "log_content": self.log_content
+						 }
+		tool.set_data(data, src)
