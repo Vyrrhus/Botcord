@@ -34,7 +34,7 @@ class ACTION:
 		retourne une classe embed
 	"""
 	 
-	__slots__ = ['lib', 'user', 'author', 'time', 'reason', 'message', 'log_id', 'log_channel', 'log_content', 'num']
+	__slots__ = ['lib', 'user', 'author', 'time', 'reason', 'message', 'log_id', 'log_channel', 'log_content', 'num', 'color']
 	
 	def __init__(self, lib, user_id, author_id, time, reason=None, message=None, num=None, log_id=None, log_channel=None, log_content=None):
 		
@@ -104,7 +104,7 @@ class ACTION:
 		if self.log_id:
 			textchannel = client.get_channel(self.log_channel)
 			if textchannel:
-				field_list.append(tool.set_field(name='\nDans #{} :'.format(channel.name), value=self.log_content, inline=False))
+				field_list.append(tool.set_field(name='\nDans #{} :'.format(textchannel.name), value=self.log_content, inline=False))
 			else:
 				field_list.append(tool.set_field(name='\n Dans #deleted_channel :', value=self.log_content, inline=False))
 		
