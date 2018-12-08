@@ -1,42 +1,21 @@
 import discord
 
-from src.config.settings import data
-
 def is_owner(member):
 	"""True if is me
 	"""
 	return member.id == 246321888693977088
 
-def in_moderation_channel(channel):
+def in_channel(channel, channel_id):
 	""" True if #moderation_animation
 	"""
-	return channel.id == data['ID']['SALON_MODERATION']
+	return channel.id == channel_id
 
-def is_moderator(member):
-	""" True if @Animateur or @Staff
+def is_role(member, roles_id):
+	""" True if member has any of the roles in roles_id list
 	"""
 	if not is_member(member):
 		return False
-	return any(role.id in data['ID']['ROLE_MODERATION'] for role in member.roles)
-
-def is_staff(member):
-	""" True if @Staff
-	"""
-	if not is_member(member):
-		return False
-	return any(role.id == data['ID']['ROLE_STAFF'] for role in member.roles)
-
-def is_sdd(member):
-	""" True if @dialogue or @discussion
-	"""
-	if not is_member(member):
-		return False
-	if any(role.id == data['ID']['ROLE_DISCUSSION'] for role in member.roles):
-		return True
-	elif any(role.id == data['ID']['ROLE_DIALOGUE'] for role in member.roles):
-		return True
-	else:
-		return False
+	return any(role.id in roles_id for role in member.roles)
 
 def kick_allowed(target, author):
 	""" True if author can kick target

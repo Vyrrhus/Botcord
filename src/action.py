@@ -1,7 +1,6 @@
-import discord
 import datetime
 import src.tool as tool
-from src.config.settings import data
+from src.config.settings import GUILD_ID
 
 class ACTION:
 	"""Représente une action de modération (kick, warn, ban, log).
@@ -35,37 +34,34 @@ class ACTION:
 		retourne une classe embed
 	"""
 	 
-	__slots__ = ['lib', 'user', 'author', 'time', 'reason', 'message', 'log_id', 'log_channel', 'log_content', 'num']
+	__slots__ = ['lib', 'user', 'author', 'time', 'reason', 'message', 'log_id', 'log_channel', 'log_content', 'num', 'color']
 	
-	def __init__(self, lib, user, author, time, reason=None, message=None, log=None):
+	def __init__(self, lib, user_id, author_id, time, reason=None, message=None, num=None, log_id=None, log_channel=None, log_content=None):
 		
 		# Attributs déclarés
 		self.lib = lib
-		self.user = user.id
-		self.author = author.id
-		self.time = time
+		self.user = user_id
+		self.author = author_id
+		self.time = str(time)
 		self.reason = reason
 		self.message = message
-		if not log:
-			self.log_id = None
-			self.log_channel = None
-			self.log_content = None
-		else:
-			self.log_id = log.id
-			self.log_channel = log.channel.id
-			self.log_content = log.content
+		self.log_id = log_id
+		self.log_channel = log_channel
+		self.log_content = log_content
+		self.color = 0x777777
 		
 		# Num
-		with open('src/config/moderation/num.txt', 'r+') as file:
-			num = int(file.read()) + 1
-			file.seek(0)
-			file.truncate()
-			file.write(str(num))
-			print('----- {} N°{} créée !'.format(self.lib, str(num)))
+		if not num:
+			with open('src/config/moderation/num.txt', 'r+') as file:
+				num = int(file.read()) + 1
+				file.seek(0)
+				file.truncate()
+				file.write(str(num))
+				print('----- {} N°{} créée !'.format(self.lib, str(num)))		
 		self.num = num
 		
 	def userinfo(self, client, user):
-		guild = client.get_guild(data['ID']['GUILD'])
+		guild = client.get_guild(GUILD_ID)
 		# Member
 		if guild.get_member(user):
 			user = guild.get_member(user)
@@ -108,7 +104,7 @@ class ACTION:
 		if self.log_id:
 			textchannel = client.get_channel(self.log_channel)
 			if textchannel:
-				field_list.append(tool.set_field(name='\nDans #{} :'.format(channel.name), value=self.log_content, inline=False))
+				field_list.append(tool.set_field(name='\nDans #{} :'.format(textchannel.name), value=self.log_content, inline=False))
 			else:
 				field_list.append(tool.set_field(name='\n Dans #deleted_channel :', value=self.log_content, inline=False))
 		
@@ -118,7 +114,21 @@ class ACTION:
 							 author_icon=user_icon,
 							 thumbnail=user_icon,
 							 footer_text='ID : {}'.format(str(self.user)),
-							 timestamp=self.time,
+							 timestamp=tool.str_to_date(self.time),
 							 fields=field_list)
 		
 		return EMB
+	
+	def save(self, src):
+		data = tool.get_data(src)
+		data[self.num] = {"lib": self.lib,
+						  "user": self.user,
+						  "author": self.author,
+						  "time": self.time,
+						  "reason": self.reason,
+						  "message": self.message,
+						  "log_id": self.log_id,
+						  "log_channel": self.log_channel,
+						  "log_content": self.log_content
+						 }
+		tool.set_data(data, src)

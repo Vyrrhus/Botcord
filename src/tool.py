@@ -5,14 +5,14 @@ import asyncio
 from src.config.settings import client
 
 # PRINT EQUIVALENT (consola purposes)
-async def log(text, time=False, file=None):
+async def log(text, monitor, time=False, file=None):
 	await asyncio.sleep(0)
 	if time:
 		msg = '{} - {}'.format(str(datetime.today())[:-4], text)
 	else:
 		msg = text
 
-	channel = client.get_channel(504031507191431190)
+	channel = client.get_channel(monitor)
 	await channel.send(msg)
 	return
 
@@ -183,12 +183,12 @@ async def enhance_embed(ctx, embed, confirm=False, message=None, name='Default n
 		
 def extract_text(text):
 	if text.find('[') == -1:
-		bracket = None
-		msg = text
+		inner_brack = None
+		outer_brack = text
 	else:
-		msg = text[text.find('[')+1:text.find(']')]
-		bracket = text[text.find(']')+1::]
-		if bracket == '':
-			bracket = None
+		inner_brack = text[text.find('[')+1:text.find(']')]
+		outer_brack = text[text.find(']')+1::]
+		if outer_brack == '':
+			outer_brack = None
 			
-	return msg, bracket
+	return inner_brack, outer_brack

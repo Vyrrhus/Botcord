@@ -1,14 +1,3 @@
-""" 
-Rajouter d'autres trucs utiles pour remplacer le bot twitter : 
-- suivre un compte en particulier (chaque paramètre doit pouvoir être modifié : salon, type de contenu (tweet natif, RT, RT + réponses, fav, etc), salon(s), personnes ayant les droits d'utiliser la commande, etc.
-- suivre des mots-clefs dans une liste de comptes
-- suivre des mots-clefs en restreignant au nombre d'abonnés / RT / fav (chaque settings personnalisé pour chaque keyword)
-
-- account | compte | listen
-- tag
-- 
-"""
-
 import discord
 import asyncio
 import os
@@ -21,9 +10,8 @@ import src.tweetool as twool
 from src.tool import log
 
 from discord.ext import commands
-from src.config.settings import data
+from src.config.settings import MONITOR_TWITTER as mnt
 
-import sys
 import traceback
 
 class Twitter:
@@ -41,26 +29,26 @@ class Twitter:
 	async def checking_tags(self):
 		await self.client.wait_until_ready()
 		await asyncio.sleep(1)
-		await log('TAGS TASK - INIT', time=True)
+		await log('TAGS TASK - INIT', mnt, time=True)
 		
 		# PARAMETERS FOR THE WHOLE TASK
 		# Login
-		await log('TAGS TASK - LOGIN API', time=True)
+		await log('TAGS TASK - LOGIN API', mnt, time=True)
 		api = await twool.login()
 		
 		while True:
 			await asyncio.sleep(0)
 			
 			# Sleeping time
-			sleep_time = tool.get_data('src/config/tweetings.json')['TAG_SLEEP_TIME']
-			max_time = tool.get_data('src/config/tweetings.json')['TAG_MAX_TIME']
+			sleep_time = tool.get_data('src/config/twitter/auth.json')['TAG_SLEEP_TIME']
+			max_time = tool.get_data('src/config/twitter/auth.json')['TAG_MAX_TIME']
 			
 			# Blocking
 			while self.task1_lock:
-				await log('TAGS TASK - tweets task running : lock', time=True)
 				await asyncio.sleep(10)
 				sleep_time -= 10
 			self.task2_lock = True
+			await log('TAGS TASK - RUNNING', mnt)
 			
 			# Tags list
 			data = tool.get_data('src/config/twitter/temp_tags.json')
@@ -73,7 +61,7 @@ class Twitter:
 				target = await twool.get_target(api, account)
 				
 				if not target:
-					await log('TAGS TASK - {} unreachable'.format(account))
+					await log('TAGS TASK - {} unreachable'.format(account), mnt)
 					continue
 					
 				since_id = data[account]['since_id']
@@ -86,7 +74,7 @@ class Twitter:
 						data[account]['since_id'] = until_id
 						break
 					except Exception as e:
-						await log('TAGS TASK - Exception thrown in RT, QT: sleep [60]s\n{}'.format(e), time=True)
+						await log('TAGS TASK - Exception thrown in RT, QT: sleep [60]s\n{}'.format(e), mnt, time=True)
 						await asyncio.sleep(60)
 						sleep_time -= 60
 						
@@ -98,7 +86,7 @@ class Twitter:
 #						favs = await twool.get_fav(api, target, [tweet for tweet in data[account]["tweets"]])
 #						break
 #					except Exception as e:
-#						await log('TAGS TASK - Exception thrown in FAV: SLEEP [60]s\n{}'.format(e), time=True)
+#						await log('TAGS TASK - Exception thrown in FAV: SLEEP [60]s\n{}'.format(e), mnt, time=True)
 #						traceback.print_exc()
 #						await asyncio.sleep(60)
 #						sleep_time -= 60
@@ -106,7 +94,7 @@ class Twitter:
 				# PROCESS TWEETS				
 				for retweet in retweets:
 					await asyncio.sleep(0)
-					await log('{} a RT|QUOTE n°{}'.format(account, retweet))
+					await log('{} a RT|QUOTE n°{}'.format(account, retweet), mnt)
 					temp_data = tool.get_data('src/config/twitter/temp_data.json', default=[])
 					temp_data.append({'type': 'retweet',
 									  'account': account,
@@ -116,7 +104,7 @@ class Twitter:
 					
 				for fav in favs:
 					await asyncio.sleep(0)
-					await log('{} a FAV n°{}'.format(account, fav))
+					await log('{} a FAV n°{}'.format(account, fav), mnt)
 					temp_data = tool.get_data('src/config/twitter/temp_data.json', default=[])
 					temp_data.append({'type': 'fav',
 									  'account': account,
@@ -140,7 +128,7 @@ class Twitter:
 					try:
 						data[account]["tweets"].pop(element)
 					except Exception as e:
-						await log('TAGS TASK - Exception thrown l.134 : {}'.format(e))
+						await log('TAGS TASK - Exception thrown l.132 : {}'.format(e), mnt)
 			
 			list_to_del = []
 			for account in data:
@@ -161,20 +149,20 @@ class Twitter:
 			await asyncio.sleep(0)
 			if sleep_time <= 0:
 				sleep_time = 0
-			await log('TAGS TASK - sleeping [{}s]'.format(sleep_time), time=True)
+			await log('TAGS TASK - sleeping [{}s]'.format(sleep_time), mnt, time=True)
 			self.task2_lock = False
 			await asyncio.sleep(sleep_time)
-			await log('TAGS TASK - sleeping over', time=True)
+			await log('TAGS TASK - sleeping over', mnt, time=True)
 				
 	
 	async def getting_tweets(self):
 		await self.client.wait_until_ready()
 		await asyncio.sleep(1)
-		await log('TWEETS TASK - INIT', time=True)
+		await log('TWEETS TASK - INIT', mnt, time=True)
 		
 		# PARAMETERS FOR THE WHOLE TASK
 		# Login
-		await log('TWEETS TASK - LOGIN API', time=True)
+		await log('TWEETS TASK - LOGIN API', mnt, time=True)
 		api = await twool.login()
 		self.task1_lock = True
 		
@@ -182,14 +170,14 @@ class Twitter:
 			await asyncio.sleep(0)
 			
 			# Sleeping time
-			sleep_time = tool.get_data('src/config/tweetings.json')['TWEET_SLEEP_TIME']
+			sleep_time = tool.get_data('src/config/twitter/auth.json')['TWEET_SLEEP_TIME']
 			
 			# Blocking
 			while self.task2_lock:
-				await log('TWEETS TASK - tags task running : lock', time=True)
 				await asyncio.sleep(10)
 				sleep_time -= 10
 			self.task1_lock = True
+			await log('TWEETS TASK - running', mnt, time=True)
 			
 			# Merging data
 			data = tool.get_data('src/config/twitter/data.json')
@@ -290,7 +278,7 @@ class Twitter:
 				target = await twool.get_target(api, account)
 				
 				if not target:
-					await log('TWEETS TASK  - {} unreachable, check channels: {}'.format(account, ['{} '.format(element) for element in data[account]['channel']]))
+					await log('TWEETS TASK  - {} unreachable, check channels: {}'.format(account, ['{} '.format(element) for element in data[account]['channel']]), mnt)
 					continue
 					
 				since_id = data[account]['since_id']
@@ -305,11 +293,11 @@ class Twitter:
 					try:
 						tweets, until_id = await twool.get_tweet(api, target, since_id=since_id, created_since=created_since)
 						if tweets:
-							await log('TWEETS TASK - {} : {} tweets found'.format(account, len(tweets)))
+							await log('TWEETS TASK - {} : {} tweets found'.format(account, len(tweets)), mnt)
 						data[account]['since_id'] = until_id
 						break
 					except Exception as e:
-						await log('TWEETS TASK - Exception thrown ({}) : [60]s'.format(e), time=True)
+						await log('TWEETS TASK - Exception thrown ({}) : [60]s'.format(e), mnt, time=True)
 						await asyncio.sleep(60)
 						sleep_time -= 60
 				
@@ -343,7 +331,7 @@ class Twitter:
 							tags = await twool.get_tags(tweet)
 							data_track[account][tweet.id_str]['tags'] = tags
 						except Exception as e:
-							await log('TWEETS TASK - Exception thrown l. 299-300 ({})'.format(e), time=True)
+							await log('TWEETS TASK - Exception thrown l. 299-300 ({})'.format(e), mnt, time=True)
 							pass
 						
 						temp_tags = tool.get_data('src/config/twitter/temp_tags.json')
@@ -368,7 +356,7 @@ class Twitter:
 					for textchannel in textchannels:
 						await asyncio.sleep(0)
 						if not textchannel:
-#							await log('channel not found for {}'.format(account), time=True)
+#							await log('channel not found for {}'.format(account), mnt, time=True)
 							continue
 						await textchannel.send(content=None, embed=EMB)
 		
@@ -382,10 +370,10 @@ class Twitter:
 			await asyncio.sleep(0)
 			if sleep_time <= 10:
 				sleep_time = tool.get_data('src/config/tweetings.json')['TWEET_MIN_SLEEP_TIME']
-			await log('TWEETS TASK - sleeping [{}s]'.format(sleep_time), time=True)
+			await log('TWEETS TASK - sleeping [{}s]'.format(sleep_time), mnt, time=True)
 			self.task1_lock = False
 			await asyncio.sleep(sleep_time)
-			await log('TWEETS TASK - sleeping over', time=True)
+			await log('TWEETS TASK - sleeping over', mnt, time=True)
 					
 				
 	###########################################
@@ -396,9 +384,10 @@ class Twitter:
 	async def __local_check(self, ctx):
 		""" Les commandes de ce cog ne peuvent être utilisées que par un staff"""
 		try:
-			return check.is_staff(ctx.author)
+			staff_role = tool.get_data('src/config/id.json')['ROLE']['STAFF']
+			return check.is_role(ctx.author, staff_role)
 		except:
-			await log('twitter local check failed')
+			await log('twitter local check failed', mnt)
 			return False
 	
 	###########################################
@@ -415,12 +404,13 @@ class Twitter:
 		> ?follow Action_Insoumis : ajoute [Action_Insoumis] à la liste des comptes suivis sur ce salon
 		> ?follow : afficher la liste des comptes suivis sur ce salon
 		"""
-		await log('ADD')
+		await log('COMMAND - ADD', mnt)
 		# Liste des comptes suivis sur ce salon :
 		if not compte_twitter:
+			data = tool.get_data('src/config/twitter/data.json')
 			accounts = []
-			for element in data['TWITTER']['ACCOUNT']:
-				if ctx.channel.id in data['TWITTER']['ACCOUNT'][element]['channel']:
+			for element in data:
+				if ctx.channel.id in data[element]['channel']:
 					accounts.append(element)
 			if not accounts:
 				return await ctx.channel.send("Aucun compte twitter n'est suivi ici :shrug:")
@@ -452,7 +442,7 @@ class Twitter:
 	async def remove_twitter(self, ctx, *compte_twitter):
 		"""Retire le compte de la liste des comptes suivis dans ce salon
 		"""
-		await log('REMOVE')
+		await log('COMMAND - REMOVE', mnt)
 		if not compte_twitter:
 			return
 		
@@ -482,10 +472,13 @@ class Twitter:
 	async def track(self, ctx, *compte_twitter):
 		"""Collecte des données sur le compte (chaque tweet + tags publiés)
 		"""
-		await log('TRACK')
+		await log('COMMAND - TRACK', mnt)
 		#Liste des comptes écoutés :
 		if not compte_twitter:
-			accounts = data['TWITTER']['LISTEN']
+			data = tool.get_data('src/config/twitter/tweet.json')
+			accounts = []
+			for element in data:
+				accounts.append(element)
 			if not accounts:
 				return await ctx.channel.send("Aucun compte twitter n'est traqué.")
 			EMB = tool.set_embed(color=0x006a6a,
@@ -517,7 +510,7 @@ class Twitter:
 	async def untrack(self, ctx, *compte_twitter):
 		"""Retire le compte de la liste des comptes traqués
 		"""
-		await log('UNTRACK')
+		await log('COMMAND - UNTRACK', mnt)
 		if not compte_twitter:
 			return
 		
