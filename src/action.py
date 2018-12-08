@@ -36,29 +36,19 @@ class ACTION:
 	 
 	__slots__ = ['lib', 'user', 'author', 'time', 'reason', 'message', 'log_id', 'log_channel', 'log_content', 'num']
 	
-	def __init__(self, lib, user, author, time, reason=None, message=None, log=None, num=None, user_id=None, author_id=None, log_id=None, log_channel=None, log_content=None):
+	def __init__(self, lib, user_id, author_id, time, reason=None, message=None, num=None, log_id=None, log_channel=None, log_content=None):
 		
 		# Attributs déclarés
 		self.lib = lib
-		if not user_id:
-			self.user = user.id
-		else:
-			self.user = user_id
-		if not author_id:
-			self.author = author.id
-		else:
-			self.author = author_id
-		self.time = time
+		self.user = user_id
+		self.author = author_id
+		self.time = str(time)
 		self.reason = reason
 		self.message = message
-		if not log:
-			self.log_id = log_id
-			self.log_channel = log_channel
-			self.log_content = log_content
-		else:
-			self.log_id = log.id
-			self.log_channel = log.channel.id
-			self.log_content = log.content
+		self.log_id = log_id
+		self.log_channel = log_channel
+		self.log_content = log_content
+		self.color = 0x777777
 		
 		# Num
 		if not num:
@@ -124,7 +114,7 @@ class ACTION:
 							 author_icon=user_icon,
 							 thumbnail=user_icon,
 							 footer_text='ID : {}'.format(str(self.user)),
-							 timestamp=self.time,
+							 timestamp=tool.str_to_date(self.time),
 							 fields=field_list)
 		
 		return EMB
@@ -134,7 +124,7 @@ class ACTION:
 		data[self.num] = {"lib": self.lib,
 						  "user": self.user,
 						  "author": self.author,
-						  "time": str(self.time),
+						  "time": self.time,
 						  "reason": self.reason,
 						  "message": self.message,
 						  "log_id": self.log_id,
