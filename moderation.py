@@ -69,13 +69,13 @@ class Moderation:
 		
 		# Notification aux modérateurs
 		await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
-		await ctx.channel.send('{} a reçu un warn :telephone:'.format(target.mention))
+		await ctx.channel.send(':warning: {} a reçu un warn'.format(target.mention))
 		
 		# Envoi du warn
 		await target.send(self.text['WARN'].format(text))
 		
 		# Sauvegarde du log
-		pass
+		action.save('src/config/moderation/data.json')
 	
 	# KICK COMMAND
 	@commands.command(name='kick', pass_context=True)
@@ -84,7 +84,7 @@ class Moderation:
 		"""
 		# Checks
 		if check.is_role(target, self.id['ROLE']['MODER']):
-			await log('KICK - target role onvalide', MNT)
+			await log('KICK - target role invalide', MNT)
 			return
 		if not check.kick_allowed(target, ctx.message.author) or not check.kick_allowed(target, ctx.guild.me):
 			await log('KICK - permission de kick refusée', MNT)
@@ -92,10 +92,9 @@ class Moderation:
 		
 		# Séparation du text en message + auditlog
 		message, auditlog = tool.extract_text(text)
-		print('message: {}\nauditlog: {}'.format(message, auditlog))
 		if not auditlog:
 			await log('KICK - auditlog not given', MNT)
-			return await ctx.channel.send("Auditlog manquant : ?kick [message envoyé] auditlog")
+			return await ctx.channel.send("Auditlog manquant : ?kick [message optionnel] auditlog")
 		if len(auditlog) > 512:
 			await log('KICK - auditlog too long (512 char max)', MNT)
 			return await ctx.channel.send("Auditlog trop long *({}/512 caractères max)*".format(len(auditlog)))
@@ -106,7 +105,7 @@ class Moderation:
 		
 		# Notification aux modérateurs
 		await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
-		await ctx.channel.send('{} a été kick du serveur :hammer:'.format(target.mention))
+		await ctx.channel.send(':hammer: {} a été kick du serveur.'.format(target.mention))
 		
 		# Kick
 		if message:
@@ -117,7 +116,47 @@ class Moderation:
 		await target.kick(reason=auditlog)
 		
 		# Sauvegarde du log
-		pass
+		action.save('src/config/moderation/data.json')
+		
+	@commands.command(name='ban', pass_context=True)
+	async def ban(self, ctx, target: discord.Member, *, text):
+		""" Ban un user (message optionnel)
+		"""
+		# Checks
+		if check.is_role(target, self.id['ROLE']['MODER']):
+			await log('BAN - target role invalide', MNT)
+			return
+		if not check.ban_allowed(target, ctx.message.author) or not check.ban_allowed(target, ctx.guild.me):
+			await log('BAN - permission de ban refusée', MNT)
+			return
+		
+		# Séparation du text en message + auditlog
+		message, auditlog = tool.extract_text(text)
+		if not auditlog:
+			await log('BAN - auditlog not given', MNT)
+			return await ctx.channel.send('Auditlog manquant : ?ban [message optionnel] auditlog')
+		if len(auditlog) > 512:
+			await log('BAN - auditlog too long (512 char max)', MNT)
+			return await ctx.channel.send("Auditlog trop long *({}/512 caractères max)".format(len(auditlog)))
+		
+		# ACTION
+		action = ACTION('Ban', target, ctx.message.author, ctx.message.created_at, message=message, reason=auditlog)
+		EMB = action.embed(self.client, 0x550000)
+		
+		# Notification aux modérateurs
+		await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
+		await ctx.channel.send(':skull_crossbones: {} a été ban du serveur.'.format(target.mention))
+		
+		# Ban
+		if message:
+			await target.send(self.text['BAN'].format(message))
+		else:
+			await target.send(self.text['BAN_w_msg'])
+		self.exit_lock = True
+		await target.ban(reason=auditlog, delete_message_days=1)
+		
+		# Sauvegarde du log
+		action.save('src/config/moderation/data.json')
 		
 	@commands.command(name='libre', pass_context=True)
 	async def libre(self, ctx):
