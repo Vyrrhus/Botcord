@@ -3,103 +3,84 @@
 """
 BOT DE MODÉRATION DU DISCORD INSOUMIS
 - voir https://discordpy.readthedocs.io/en/rewrite/ -
-
-FILE MAP
---------
-MAIN >>>>>>>>>> main.py 		: 	gère les extensions & commandes de staff
-				twitter.py		:	task pour suivre des tweets & commandes pour interagir
-				
-SRC >>>>>>>>>>> src/check.py	:	fonctions renvoyant un boolean pour vérifier certaines conditions
-				src/tool.py		:	fonctions utilitaires pour réaliser des conversions, sérialiser, etc.
-				src/tweetool.py	:	fonctions utilitaires spécifiques au module twitter.py
-				
-	CONFIG >>>>>>>>>>> src/config/settings.py : charge les fichiers json dans les variables associées
-				
-WIP
----
-- vérifier qu'on ne peut pas modérer un autre bot (comment?)
-- changer !help commande (decorators ?)
-- assert toutes les fonctions?
-
 """
-import sys
+
 import os
+import sys
 import traceback
 import discord
-import datetime
 import asyncio
 import logging
-import random
+
 import src.check as check
 import src.tool as tool
 from src.tool import log
-from src.config.settings import data, client
+from src.config.settings import client, TOKEN, MONITOR_MAIN
+from src.config.version import VERSION
 
+###########################################
+#            LOGGING SNIPPET              #
+###########################################
+"""Generate a single file called 'discord.log' for debug purposes"""
 try:
 	os.remove('logfile.log')
 	os.rename('discord.log', 'logfile.log')
 except:
 	pass
-	
+# Logger
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-# GLOBAL SETTINGS
-TOKEN = data['TOKEN']
-VERSION = '2.2a'
+###########################################
+#            	  CLIENT                  #
+###########################################
+# SETTINGS & EXTENSIONS
 
-# EXTENSIONS : loaded by default
-extensions = ['moderation', 'twitter']
+EXTENSIONS = ['moderation']
 
-# STARTING EVENT
+# EVENTS
 @client.event
 async def on_ready():
 	"""Preparation done"""
-	await log('HAL 9000 is ready\nv{}'.format(VERSION), time=True)
-
-@client.event
-async def on_resumed():
-	"""Client has resumed session"""
-	await log('HAL 9000 has resumed session', time=True)
+	await log('HAL 9000 is ready\nv{}'.format(VERSION), MONITOR_MAIN, time=True)
 	
+@client.event
+async def on_command_error(ctx, Exception):
+	try:
+		channel = ctx.channel.name
+	except:
+		channel = 'DMChannel'
+	await log('Command raised in {} by {} (invoke : {} - {})'.format(channel, ctx.author.name, ctx.message.content, ctx.prefix), MONITOR_MAIN)
+	await log('Error : raised Exception : {}'.format(Exception), MONITOR_MAIN)
+
+# HOOKS
 @client.before_invoke
 async def before_any_command(ctx):
-	"""Global hook pour interrompre les commandes (bot capricieux)
+	"""Global hook before any command
 		>>> Désactivé for now
 	"""
 	if True:
 		return
-	ctx.global_lock = False
-	probability = 0.01
-	if random.random() > probability:
-		return
-	else:
-		ctx.global_lock = True
-		print('HAL TRIGGERED')
 
+# COMMANDS
 @client.command()
 async def version(ctx):
 	"""Return version"""
 	await ctx.channel.send('HAL 9000 - version {}'.format(VERSION))
 	
 @client.command()
-async def connexion(ctx):
-	"""Return connection info"""
-	await ctx.channel.send('Latency: {}\nIs_ready: {}'.format(client.latency, client.is_ready()))
-	
-@client.command()
 async def evl(ctx, module: str):
-	await log({t for t in asyncio.Task.all_tasks() if module in repr(t)})
+	await log({t for t in asyncio.Task.all_tasks() if module in repr(t)}, MONITOR_MAIN)
 	
 @client.command()
 async def close(ctx):
 	"""Owner can log off"""
 	if check.is_owner(ctx.author):
-		print('logout')
-		await log('HAL 9000 logging out', time=True)
+#		await log('{}'.format(['{} - {}'.format(role.name, role.id) for role in ctx.author.roles]), MONITOR_MAIN)
+		await log('HAL 9000 logging out', MONITOR_MAIN, time=True)
 		await client.logout()
 	else:
 		pass
@@ -136,7 +117,6 @@ async def sendlog(ctx, path):
 	"""
 	if not check.is_owner(ctx.author):
 		return
-	await ctx.channel.send('SENDLOG COMMAND')
 	file = ctx.message.attachments
 	for element in file:
 		print(str(element))
@@ -151,15 +131,10 @@ async def create_dir(ctx, path):
 	"""
 	if not check.is_owner(ctx.author):
 		return
-	await ctx.channel.send('CREATE DIR COMMAND')
 	try:
 		os.mkdir(path)
 	except:
 		pass
-	
-###########################################
-#            LOAD AND UNLOAD              #
-###########################################
 	
 @client.command(name='load')
 async def load(ctx, extension):
@@ -168,13 +143,13 @@ async def load(ctx, extension):
 	Extensions accessibles :
 	- 'twitter'
 	"""
-	if not check.is_staff(ctx.author):
+	if not check.is_owner(ctx.author):
 		return
 	try:
 		client.load_extension(extension.lower())
-		await log('Loaded {}'.format(extension.lower()))
+		await log('Loaded {}'.format(extension.lower()), MONITOR_MAIN)
 	except Exception as error:
-		await log('{} cannot be loaded. [{}]'.format(extension.lower(), error))
+		await log('{} cannot be loaded. [{}]'.format(extension.lower(), error), MONITOR_MAIN)
 		
 @client.command(name='unload')
 async def unload(ctx, extension):
@@ -183,42 +158,27 @@ async def unload(ctx, extension):
 	Extensions accessibles :
 	- 'twitter'
 	"""
-	if not check.is_staff(ctx.author):
+	if not check.is_owner(ctx.author):
 		return
 	try:
 		client.unload_extension(extension.lower())
-		await log('Unloaded {}'.format(extension.lower()))
+		await log('Unloaded {}'.format(extension.lower()), MONITOR_MAIN)
 	except Exception as error:
-		await log('{} cannot be unloaded. [{}]'.format(extension.lower(), error))
-	
-
-###########################################
-#                 ERROR                   #
-###########################################
-
-@client.event
-async def on_command_error(ctx, Exception):
-	try:
-		channel = ctx.channel.name
-	except:
-		channel = 'DMChannel'
-	await log('Command raised in {} by {} (invoke : {} - {})'.format(channel, ctx.author.name, ctx.message.content, ctx.prefix))
-	await log('Error : raised Exception : {}'.format(Exception))
+		await log('{} cannot be unloaded. [{}]'.format(extension.lower(), error), MONITOR_MAIN)
 	
 ###########################################
 #                  RUN                    #
 ###########################################
 
 if __name__ == '__main__':
-	for extension in extensions:
+	for extension in EXTENSIONS:
 		try:
 			client.load_extension(extension)
 			print('{} loaded successfully'.format(extension))
-		except Exception as error:
-			print('{} cannot be loaded. [{}]'.format(extension, error))
+		except:
+			traceback.print_exc()
 
 try:
 	client.run(TOKEN, reconnect=False)
-except Exception as e:
-	print('something wrong occured')
+except:
 	traceback.print_exc()
