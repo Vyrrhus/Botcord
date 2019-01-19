@@ -46,9 +46,9 @@ class File:
 		result = ''
 		for element in files:
 			if element.is_dir():
-				result += ':file_folder: {}\n'.format(element.name)
+				result += ':file_folder: `{}/{}`\n'.format(path, element.name)
 			else:
-				result += ':page_facing_up: {}\n'.format(element.name)
+				result += ':page_facing_up: `{}/{}`\n'.format(path, element.name)
 				
 		await log(result, MNT)
 		return
@@ -76,6 +76,17 @@ class File:
 				pass
 		return
 	
+	@commands.command(name='remove', pass_context=True)
+	async def remove(self, ctx, path):
+		""" Remove the file at the specified path
+		"""
+		try:
+			os.remove(path)
+		except:
+			pass
+		
+		return
+	
 	@commands.command(name='mkdir', pass_context=True)
 	async def mkdir(self, ctx, path):
 		""" Create a new directory at the specified path
@@ -85,6 +96,17 @@ class File:
 		except:
 			await log('Something went wrong while creating the directory', MNT)
 			
+		return
+	
+	@commands.command(name='rmdir', pass_context=True)
+	async def rmdir(self, ctx, path):
+		""" Remove an empty directory at specified path
+		"""
+		try:
+			os.rmdir(path)
+		except:
+			pass
+		
 		return
 	
 def setup(client):
