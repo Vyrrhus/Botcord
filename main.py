@@ -39,7 +39,7 @@ logger.addHandler(handler)
 ###########################################
 # SETTINGS & EXTENSIONS
 
-EXTENSIONS = ['moderation', 'twitter']
+EXTENSIONS = ['file']
 
 # EVENTS
 @client.event
@@ -83,57 +83,6 @@ async def close(ctx):
 		await log('HAL 9000 logging out', MONITOR_MAIN, time=True)
 		await client.logout()
 	else:
-		pass
-	
-@client.command(name='getlog', pass_context=True)
-async def getlog(ctx, data_file):
-	"""Retrieve all data file
-	"""
-	if not check.is_owner(ctx.author):
-		return
-	await ctx.channel.send('DATA COMMAND')
-	file = '{}'.format(data_file)
-	try:
-		await ctx.channel.send("The file you want : ", file=discord.File(file))
-	except:
-		await ctx.channel.send('File sending has failed')
-
-@client.command(name='getdir', pass_context=True)
-async def getdir(ctx, path):
-	"""List all files within dir
-	"""
-	if not check.is_owner(ctx.author):
-		return
-	await ctx.channel.send('DIR COMMAND')
-	list_file = os.listdir(path)
-	try:
-		await ctx.channel.send('{}'.format(['{} '.format(e) for e in list_file]))
-	except:
-		pass
-	
-@client.command(name='sendlog', pass_context=True)
-async def sendlog(ctx, path):
-	"""Send file to path dir
-	"""
-	if not check.is_owner(ctx.author):
-		return
-	file = ctx.message.attachments
-	for element in file:
-		print(str(element))
-		try:
-			await element.save(path)
-		except:
-			pass
-		
-@client.command(name='create_dir', pass_context=True)
-async def create_dir(ctx, path):
-	"""Create dir
-	"""
-	if not check.is_owner(ctx.author):
-		return
-	try:
-		os.mkdir(path)
-	except:
 		pass
 	
 @client.command(name='load')
