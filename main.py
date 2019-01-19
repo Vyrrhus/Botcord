@@ -39,7 +39,7 @@ logger.addHandler(handler)
 ###########################################
 # SETTINGS & EXTENSIONS
 
-EXTENSIONS = ['file']
+EXTENSIONS = ['twitter', 'moderation', 'file']
 
 # EVENTS
 @client.event
