@@ -20,10 +20,12 @@ class File:
 	
 	# LOCAL CHECK
 	async def __local_check(self, ctx):
-		""" Les commands de ce cog ne peuvent être utilisées que par un staff
+		""" Les commands de ce cog ne peuvent être utilisées que par un staff ou l'owner
 		"""
 		try:
 			staff_role = tool.get_data('src/config/id.json')['ROLE']['STAFF']
+			if check.is_owner(ctx.author):
+				return True
 			return check.is_role(ctx.author, staff_role)
 		except:
 			await log('File local check failed', MNT)
