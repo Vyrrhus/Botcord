@@ -62,9 +62,9 @@ class ACTION:
 					# On récupère le numéro ailleurs
 					try:
 						tweets_data = tool.get_data('src/config/moderation/data.json')
-						num = int(list(tweets_data.keys()[-1]))
+						num = int(list(tweets_data.keys())[-1])
 					except:
-						num = 0
+						num = 1
 						
 				file.write(str(num))
 				print('----- {} N°{} créée !'.format(self.lib, str(num)))		
