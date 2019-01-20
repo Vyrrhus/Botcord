@@ -369,7 +369,7 @@ class Twitter:
 			# Sleep & unlock self.task_lock
 			await asyncio.sleep(0)
 			if sleep_time <= 10:
-				sleep_time = tool.get_data('src/config/tweetings.json')['TWEET_MIN_SLEEP_TIME']
+				sleep_time = tool.get_data('src/config/twitter/auth.json')['TWEET_MIN_SLEEP_TIME']
 			await log('TWEETS TASK - sleeping [{}s]'.format(sleep_time), mnt, time=True)
 			self.task1_lock = False
 			await asyncio.sleep(sleep_time)
