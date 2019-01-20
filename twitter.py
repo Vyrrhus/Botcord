@@ -356,9 +356,12 @@ class Twitter:
 					for textchannel in textchannels:
 						await asyncio.sleep(0)
 						if not textchannel:
-#							await log('channel not found for {}'.format(account), mnt, time=True)
+							# await log('channel not found for {}'.format(account), mnt, time=True)
 							continue
-						await textchannel.send(content=None, embed=EMB)
+						try:
+							await textchannel.send(content=None, embed=EMB)
+						except:
+							await log('Cannot reach textchannel {}'.format(textchannel.name), mnt)
 		
 			# Save data
 			await asyncio.sleep(0)
