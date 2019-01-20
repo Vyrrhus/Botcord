@@ -53,9 +53,19 @@ class ACTION:
 		# Num
 		if not num:
 			with open('src/config/moderation/num.txt', 'r+') as file:
-				num = int(file.read()) + 1
-				file.seek(0)
-				file.truncate()
+				try:
+					num = int(file.read()) + 1
+					file.seek(0)
+					file.truncate()
+				except:
+					# ValueError: invalid literal for int() with base 10
+					# On récupère le numéro ailleurs
+					try:
+						tweets_data = tool.get_data('src/config/moderation/data.json')
+						num = int(list(tweets_data.keys()[-1]))
+					except:
+						num = 0
+						
 				file.write(str(num))
 				print('----- {} N°{} créée !'.format(self.lib, str(num)))		
 		self.num = num
