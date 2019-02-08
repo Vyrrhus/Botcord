@@ -8,7 +8,7 @@ def is_owner(member):
 def in_channel(channel, channel_id):
 	""" True if #moderation_animation
 	"""
-	return any(channel.id in channel_id)
+	return (channel.id in channel_id)
 
 def is_role(member, roles_id):
 	""" True if member has any of the roles in roles_id list
