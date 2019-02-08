@@ -33,7 +33,7 @@ class Moderation:
 			En outre, elles ne sont utilisables que dans le salon de modération
 		"""
 		try:
-			return check.is_role(ctx.author, self.id['ROLE']['MODER']) and check.in_channel(ctx.channel, self.id['TEXTCHANNEL']['MODER'])
+			return check.is_role(ctx.author, self.id['ROLE']['MODER']) and check.in_channel(ctx.channel, self.id['TEXTCHANNEL']['CHECK_MODER'])
 		except:
 			await log('moderation local check failed', MNT)
 			return False
