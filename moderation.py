@@ -22,11 +22,6 @@ class Moderation:
 		self.sdd_role = self.id['ROLE']['DISCU'] + self.id['ROLE']['DIALO']
 		# Exit lock to block event triggered by command
 		self.exit_lock = False
-		
-	###########################################
-	#            COROUTINE TASK               #
-	###########################################
-	"""No task in this module"""
 	
 	###########################################
 	#                  CHECKS                 #
@@ -46,12 +41,6 @@ class Moderation:
 	###########################################
 	#                COMMANDS                 #
 	###########################################
-	
-	# BEFORE HOOK
-	async def __before_invoke(self, ctx):
-		""" BEFORE HOOK FUNC
-		"""
-		return
 
 	# WARN COMMAND
 	@commands.command(name='warn', pass_context=True)
