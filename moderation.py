@@ -22,6 +22,7 @@ class Moderation:
 		self.sdd_role = self.id['ROLE']['DISCU'] + self.id['ROLE']['DIALO']
 		# Exit lock to block event triggered by command
 		self.exit_lock = False
+		self.sdd_lock = False
 	
 	###########################################
 	#                  CHECKS                 #
@@ -352,7 +353,35 @@ class Moderation:
 		
 		# SDD :hole:
 		elif emoji.name == u"\U0001F573":
-			return
+			role_dialo = guild.get_role(self.id['ROLE']['DIALO'])
+			role_discu = guild.get_role(self.id['ROLE']['DISCU'])
+			if (check.is_role(msg.author, role_discu)) or (check.is_role(msg.author, role_dialo)):
+				await log('SDD deja attribuee', MNT)
+				return
+			if not role_dialo.members:
+				if not check.change_role_allowed(role_dialo, guild.me) and not check.change_role_allowed(role_dialo, author):
+					await log('Permission to give role denied', MNT)
+					return
+				await msg.author.add_roles(role_dialo)
+				channel = self.client.get_channel(self.id['TEXTCHANNEL']['DIALO'])
+				if channel.permissions_for(guild.me).send_messages:
+					await channel.send('Bonjour {}'.format(msg.author.mention))
+				else:
+					await log('Permission to write in dialo forbidden', MNT)
+			else:
+				if not check.change_role_allowed(role_discu, guild.me) and not check.change_role_allowed(role_discu, author):
+					await log('Permission to give role denied', MNT)
+					return
+				await msg.author.add_roles(role_discu)
+				channel = self.client.get_channel(self.id['TEXTCHANNEL']['DISCU'])
+				if channel.permissions_for(guild.me).send_messages:
+					await channel.send('Bonjour {}'.format(msg.author.mention))
+				else:
+					await log('Permission to write in discu forbidden', MNT)
+			
+			await msg.remove_reaction(emoji,author)
+			action = ACTION('MISE EN SDD {}'.format(emoji), msg.author.id, author.id, msg.created_at)
+			self.sdd_lock = True
 		else:
 			return
 		
@@ -379,6 +408,20 @@ class Moderation:
 		# Mise en SDD
 		if not check.is_role(before, self.sdd_role) and check.is_role(after, self.sdd_role):
 			await log('{} a été mis en SDD'.format(before.name), MNT, time=True)
+			if self.sdd_lock:
+				await log('SDD by :hole:', MNT)
+				self.sdd_lock = False
+				return
+			if not check.auditlog_allowed(after.guild.me):
+				await log('Access to auditlog denied', MNT)
+				return
+			await asyncio.sleep(5)
+			async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_role_update, limit=20):
+				if entry.target == after and datetime.datetime.utcnow() - entry.created_at < datetime.timedelta(seconds=10):
+					action = ACTION('MISE EN SDD', entry.target, entry.user, entry.created_at)
+					EMB = action.embed(self.client, action.color)
+					await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
+					return
 			return
 		elif check.is_role(before, self.sdd_role) and not check.is_role(after, self.sdd_role):
 			lost_role = [role for role in before.roles if role not in set(after.roles)]
