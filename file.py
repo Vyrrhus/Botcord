@@ -20,13 +20,10 @@ class File:
 	
 	# LOCAL CHECK
 	async def __local_check(self, ctx):
-		""" Les commands de ce cog ne peuvent être utilisées que par un staff ou l'owner
+		""" Les commands de ce cog ne peuvent être utilisées que par l'owner
 		"""
 		try:
-			staff_role = tool.get_data('src/config/id.json')['ROLE']['STAFF']
-			if check.is_owner(ctx.author):
-				return True
-			return check.is_role(ctx.author, staff_role)
+			return check.is_owner(ctx.author)
 		except:
 			await log('File local check failed', MNT)
 			return False
@@ -36,7 +33,7 @@ class File:
 	###########################################
 	
 	# LIST FILES IN DIRECTORY
-	@commands.command(name='listdir', pass_context=True)
+	@commands.command(name='ls', pass_context=True)
 	async def listdir(self, ctx, path):
 		""" Give all files within directory and sub-directories
 		"""
@@ -78,7 +75,7 @@ class File:
 				pass
 		return
 	
-	@commands.command(name='remove', pass_context=True)
+	@commands.command(name='rm', pass_context=True)
 	async def remove(self, ctx, path):
 		""" Remove the file at the specified path
 		"""
