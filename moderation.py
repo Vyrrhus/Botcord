@@ -417,8 +417,8 @@ class Moderation:
 				return
 			await asyncio.sleep(5)
 			async for entry in after.guild.audit_logs(action=discord.AuditLogAction.member_role_update, limit=20):
-				if entry.target == after and datetime.datetime.utcnow() - entry.created_at < datetime.timedelta(seconds=10):
-					action = ACTION('MISE EN SDD', entry.target, entry.user, entry.created_at)
+				if entry.target == after and datetime.utcnow() - entry.created_at < timedelta(seconds=10):
+					action = ACTION('MISE EN SDD', entry.target.id, entry.user.id, entry.created_at)
 					EMB = action.embed(self.client, action.color)
 					await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
 					return
