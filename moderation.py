@@ -224,7 +224,7 @@ class Moderation:
 		if not list_log:
 			await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{} a rejoint le serveur.'.format(member.mention))
 			return
-		await self.client.get_channel(self.id['TEXTCHANNEL']['MODER']).send(':star: {} a rejoint le serveur : {} logs.'.format(member.mention, len(list_log)))
+		await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send(':star: {} a rejoint le serveur : {} logs.'.format(member.mention, len(list_log)))
 				
 	# ON MEMBER REMOVE	
 	async def on_member_remove(self, member):
