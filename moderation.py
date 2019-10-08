@@ -238,7 +238,7 @@ class Moderation:
 		  C'est à dire si l'entrée a été faite il y a moins de 5s, correspond à un kick / ban et concerne l'utilisateur souhaité.
 		"""
 		await log('{} a quitté le serveur'.format(member.name), MNT, time=True)
-		await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{} a quitté le serveur.'.format(member.name))
+		await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a quitté le serveur.'.format(member.name, member.discriminator))
 		
 		# Commande utilisée:
 		if self.exit_lock:
