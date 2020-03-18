@@ -356,37 +356,38 @@ class Moderation(commands.Cog):
 			action = ACTION('LOG {}'.format(emoji), msg.author.id, author.id, msg.created_at, log_id=msg.id, log_channel=msg.channel.id, log_content=msg.content)
 			await msg.delete()
 		
-		# SDD :hole:
-		elif emoji.name == u"\U0001F573":
-			role_dialo = guild.get_role(self.id['ROLE']['DIALO'])
-			role_discu = guild.get_role(self.id['ROLE']['DISCU'])
-			if (check.is_role(msg.author, role_discu)) or (check.is_role(msg.author, role_dialo)):
-				await log('SDD deja attribuee', MNT)
-				return
-			if not role_dialo.members:
-				if not check.change_role_allowed(role_dialo, guild.me) and not check.change_role_allowed(role_dialo, author):
-					await log('Permission to give role denied', MNT)
-					return
-				await msg.author.add_roles(role_dialo)
-				channel = self.client.get_channel(self.id['TEXTCHANNEL']['DIALO'])
-				if channel.permissions_for(guild.me).send_messages:
-					await channel.send('Bonjour {}'.format(msg.author.mention))
-				else:
-					await log('Permission to write in dialo forbidden', MNT)
-			else:
-				if not check.change_role_allowed(role_discu, guild.me) and not check.change_role_allowed(role_discu, author):
-					await log('Permission to give role denied', MNT)
-					return
-				await msg.author.add_roles(role_discu)
-				channel = self.client.get_channel(self.id['TEXTCHANNEL']['DISCU'])
-				if channel.permissions_for(guild.me).send_messages:
-					await channel.send('Bonjour {}'.format(msg.author.mention))
-				else:
-					await log('Permission to write in discu forbidden', MNT)
-			
-			await msg.remove_reaction(emoji,author)
-			action = ACTION('MISE EN SDD {}'.format(emoji), msg.author.id, author.id, msg.created_at)
-			self.sdd_lock = True
+##		 SDD :hole:
+#		elif emoji.name == u"\U0001F573":
+#			print('hole')
+#			role_dialo = guild.get_role(self.id['ROLE']['DIALO'])
+#			role_discu = guild.get_role(self.id['ROLE']['DISCU'])
+#			if (check.is_role(msg.author, role_discu)) or (check.is_role(msg.author, role_dialo)):
+#				await log('SDD deja attribuee', MNT)
+#				return
+#			if not role_dialo.members:
+#				if not check.change_role_allowed(role_dialo, guild.me) and not check.change_role_allowed(role_dialo, author):
+#					await log('Permission to give role denied', MNT)
+#					return
+#				await msg.author.add_roles(role_dialo)
+#				channel = self.client.get_channel(self.id['TEXTCHANNEL']['DIALO'])
+#				if channel.permissions_for(guild.me).send_messages:
+#					await channel.send('Bonjour {}'.format(msg.author.mention))
+#				else:
+#					await log('Permission to write in dialo forbidden', MNT)
+#			else:
+#				if not check.change_role_allowed(role_discu, guild.me) and not check.change_role_allowed(role_discu, author):
+#					await log('Permission to give role denied', MNT)
+#					return
+#				await msg.author.add_roles(role_discu)
+#				channel = self.client.get_channel(self.id['TEXTCHANNEL']['DISCU'])
+#				if channel.permissions_for(guild.me).send_messages:
+#					await channel.send('Bonjour {}'.format(msg.author.mention))
+#				else:
+#					await log('Permission to write in discu forbidden', MNT)
+#			
+#			await msg.remove_reaction(emoji,author)
+#			action = ACTION('MISE EN SDD {}'.format(emoji), msg.author.id, author.id, msg.created_at)
+#			self.sdd_lock = True
 		else:
 			return
 		
