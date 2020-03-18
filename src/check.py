@@ -5,6 +5,9 @@ def is_owner(member):
 	"""
 	return member.id == 246321888693977088
 
+def check_is_me(ctx):
+	return is_owner(ctx.author)
+
 def in_channel(channel, channel_id):
 	""" True if #moderation_animation
 	"""
