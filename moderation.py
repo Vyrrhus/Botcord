@@ -324,7 +324,7 @@ class Moderation(commands.Cog):
 		guild = self.client.get_guild(GUILD_ID)
 		author = guild.get_member(payload.user_id)
 		channel = self.client.get_channel(payload.channel_id)
-		msg = await channel.get_message(payload.message_id)
+		msg = await channel.fetch_message(payload.message_id)
 
 		# Checks
 		if not check.is_role(author, self.id['ROLE']['MODER']):
