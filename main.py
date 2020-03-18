@@ -19,22 +19,6 @@ from src.config.settings import client, TOKEN, MONITOR_MAIN
 from src.config.version import VERSION
 
 ###########################################
-#            LOGGING SNIPPET              #
-###########################################
-"""Generate a single file called 'discord.log' for debug purposes"""
-try:
-	os.remove('logfile.log')
-	os.rename('discord.log', 'logfile.log')
-except:
-	pass
-# Logger
-logger = logging.getLogger('discord')
-logger.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
-handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-logger.addHandler(handler)
-
-###########################################
 #            	  CLIENT                  #
 ###########################################
 # SETTINGS & EXTENSIONS
