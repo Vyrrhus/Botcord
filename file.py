@@ -9,17 +9,17 @@ from src.config.settings import MONITOR_MAIN as MNT
 
 import os
 
-class File:
+class File(commands.Cog):
+	"""All files commands : remove & add directories, files. Upload and download them."""
 	def __init__(self, client):
 		self.client = client
-	
 	
 	###########################################
 	#                  CHECKS                 #
 	###########################################
 	
 	# LOCAL CHECK
-	async def __local_check(self, ctx):
+	async def cog_check(self, ctx):
 		""" Les commands de ce cog ne peuvent être utilisées que par l'owner
 		"""
 		try:
@@ -35,7 +35,7 @@ class File:
 	# LIST FILES IN DIRECTORY
 	@commands.command(name='ls', pass_context=True)
 	async def listdir(self, ctx, path):
-		""" Give all files within directory and sub-directories
+		""" Repository list
 		"""
 		try:
 			files = os.scandir(path)
@@ -54,7 +54,7 @@ class File:
 	
 	@commands.command(name='download', pass_context=True)
 	async def download(self, ctx, file_path):
-		""" Send the file specified to the current channel
+		""" Download file
 		"""
 		try:
 			await ctx.channel.send("Fichier : ", file=discord.File('{}'.format(file_path)))
@@ -64,7 +64,7 @@ class File:
 	
 	@commands.command(name='upload', pass_context=True)
 	async def upload(self, ctx, path):
-		""" Put the attached file to the specified path
+		""" Upload file
 		"""
 		file = ctx.message.attachments
 		for element in file:
@@ -77,7 +77,7 @@ class File:
 	
 	@commands.command(name='rm', pass_context=True)
 	async def remove(self, ctx, path):
-		""" Remove the file at the specified path
+		""" Remove file
 		"""
 		try:
 			os.remove(path)
@@ -88,7 +88,7 @@ class File:
 	
 	@commands.command(name='mkdir', pass_context=True)
 	async def mkdir(self, ctx, path):
-		""" Create a new directory at the specified path
+		""" Create new dir
 		"""
 		try:
 			os.mkdir(path)
@@ -99,7 +99,7 @@ class File:
 	
 	@commands.command(name='rmdir', pass_context=True)
 	async def rmdir(self, ctx, path):
-		""" Remove an empty directory at specified path
+		""" Remove empty dir
 		"""
 		try:
 			os.rmdir(path)

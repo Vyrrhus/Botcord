@@ -13,7 +13,7 @@ from discord.ext import commands
 from src.action import ACTION
 #from src.note import NOTE
 
-class Moderation:
+class Moderation(commands.Cog):
 	def __init__(self, client):
 		self.client = client
 		# Store id & text for events
@@ -29,7 +29,7 @@ class Moderation:
 	###########################################
 	
 	# LOCAL CHECK
-	async def __local_check(self, ctx):
+	async def cog_check(self, ctx):
 		"""	Les commandes de ce cog ne peuvent être utilisées que par un staff ou un modérateur.
 			En outre, elles ne sont utilisables que dans le salon de modération
 		"""
@@ -211,6 +211,7 @@ class Moderation:
 	###########################################
 		
 	# ON MEMBER JOIN
+	@commands.Cog.listener()
 	async def on_member_join(self, member):
 		""" Vérifie les logs des nouveaux arrivants
 		"""
@@ -226,7 +227,8 @@ class Moderation:
 			return
 		await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send(':star: {} a rejoint le serveur : {} logs.'.format(member.mention, len(list_log)))
 				
-	# ON MEMBER REMOVE	
+	# ON MEMBER REMOVE
+	@commands.Cog.listener()
 	async def on_member_remove(self, member):
 		""" Notifie les kicks / bans si ceux-ci ne sont pas dûs à une commande.
 			Notifie aussi les fuites de SDD (quelqu'un quitte de lui-même le serveur avec un rôle SDD)
@@ -310,6 +312,7 @@ class Moderation:
 		
 		
 	# ON RAW REACTION ADD
+	@commands.Cog.listener()
 	async def on_raw_reaction_add(self, payload):
 		""" Log ou supprime un message via un emoji mis en réaction.
 			Donne un rôle SDD en fonction de la place libre avec un troisième emoji
@@ -397,11 +400,13 @@ class Moderation:
 		
 	
 	# ON MEMBER BAN
+	@commands.Cog.listener()
 	async def on_member_ban(self, guild, user):
 		""" Notifie les bans uniquement s'ils sont réalisés sur des non-membres du serveur (pour éviter les doublons)"""
 		return
 			
 	# ON MEMBER UPDATE
+	@commands.Cog.listener()
 	async def on_member_update(self, before, after):
 		""" Notifie les mises en SDD si celles-ci ne sont pas le fait d'une commande.
 			"Libère" la SDD lorsqu'il n'y a plus personne dedans (laisse un message)

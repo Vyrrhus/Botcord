@@ -14,7 +14,7 @@ from src.config.settings import MONITOR_TWITTER as mnt
 
 import traceback
 
-class Twitter:
+class Twitter(commands.Cog):
 	def __init__(self, client):
 		self.client = client
 		self.task1_lock = True
@@ -384,7 +384,7 @@ class Twitter:
 	###########################################
 	
 	# LOCAL CHECK
-	async def __local_check(self, ctx):
+	async def cog_check(self, ctx):
 		""" Les commandes de ce cog ne peuvent être utilisées que par un staff"""
 		try:
 			staff_role = tool.get_data('src/config/id.json')['ROLE']['STAFF']
