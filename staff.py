@@ -31,7 +31,10 @@ class Staff(commands.Cog):
 					# Trigger claims that must be fired
 					if claim['next'] <= 0:
 						claim['next'] = claim['delay']
-						await self.client.get_channel(int(channel_ID)).send(claim['text'])
+						try:
+							await self.client.get_channel(int(channel_ID)).send(claim['text'])
+						else:
+							await log('ALERTE : accès restreint au salon ID: {}'.format(in(channel_ID)), MNT)
 					update.append(claim)
 				claim_data[channel_ID] = update
 			# Task executes every minute

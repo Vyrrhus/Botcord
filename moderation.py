@@ -240,7 +240,6 @@ class Moderation(commands.Cog):
 		  C'est à dire si l'entrée a été faite il y a moins de 5s, correspond à un kick / ban et concerne l'utilisateur souhaité.
 		"""
 		await log('{} a quitté le serveur'.format(member.name), MNT, time=True)
-		await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a quitté le serveur.'.format(member.name, member.discriminator))
 		
 		# Commande utilisée:
 		if self.exit_lock:
@@ -274,6 +273,11 @@ class Moderation(commands.Cog):
 							channel = self.client.get_channel(self.id['TEXTCHANNEL']['DIALO'])
 							await channel.send('```LIBRE```')
 				return
+			
+			try:
+				await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a été kick du serveur. :hammer:'.format(member.name, member.discriminator))
+			except:
+				await log('ALERTE : accès restreint au salon JOIN_REMOVE')
 		
 		# Ban
 		async for entry in guild.audit_logs(action=discord.AuditLogAction.ban, limit=20):
@@ -297,9 +301,19 @@ class Moderation(commands.Cog):
 							channel = self.client.get_channel(self.id['TEXTCHANNEL']['DIALO'])
 							await channel.send('```LIBRE```')
 				return
+			
+			try:
+				await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a été ban du serveur. :skull_crossbones:'.format(member.name, member.discriminator))
+			except:
+				await log('ALERTE : accès restreint au salon JOIN_REMOVE')
 		
 		# Départ volontaire
 		await log('Départ volontaire', MNT)
+		try:
+			await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a quitté le serveur.'.format(member.name, member.discriminator))
+		except:
+			await log('ALERTE : accès restreint au salon JOIN_REMOVE')
+			
 		if check.is_role(member, self.sdd_role):
 			for role in member.roles:
 				if role.id == self.id['ROLE']['DISCU'] and not role.members:
@@ -398,8 +412,6 @@ class Moderation(commands.Cog):
 		# Sauvegarde du log
 		action.save('src/config/moderation/data.json')
 				
-		
-	
 	# ON MEMBER BAN
 	@commands.Cog.listener()
 	async def on_member_ban(self, guild, user):
