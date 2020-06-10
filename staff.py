@@ -33,8 +33,8 @@ class Staff(commands.Cog):
 						claim['next'] = claim['delay']
 						try:
 							await self.client.get_channel(int(channel_ID)).send(claim['text'])
-						else:
-							await log('ALERTE : accès restreint au salon ID: {}'.format(in(channel_ID)), MNT)
+						except:
+							await log('ALERTE : accès restreint au salon ID: {}'.format(int(channel_ID)), MNT)
 					update.append(claim)
 				claim_data[channel_ID] = update
 			# Task executes every minute
