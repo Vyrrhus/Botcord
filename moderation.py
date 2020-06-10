@@ -272,12 +272,13 @@ class Moderation(commands.Cog):
 						if role.id == self.id['ROLE']['DIALO'] and not role.members:
 							channel = self.client.get_channel(self.id['TEXTCHANNEL']['DIALO'])
 							await channel.send('```LIBRE```')
-				return
 			
-			try:
-				await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a été kick du serveur. :hammer:'.format(member.name, member.discriminator))
-			except:
-				await log('ALERTE : accès restreint au salon JOIN_REMOVE')
+				try:
+					await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a été kick du serveur. :hammer:'.format(member.name, member.discriminator))
+				except:
+					await log('ALERTE : accès restreint au salon JOIN_REMOVE')
+					
+				return
 		
 		# Ban
 		async for entry in guild.audit_logs(action=discord.AuditLogAction.ban, limit=20):
@@ -300,12 +301,13 @@ class Moderation(commands.Cog):
 						if role.id == self.id['ROLE']['DIALO'] and not role.members:
 							channel = self.client.get_channel(self.id['TEXTCHANNEL']['DIALO'])
 							await channel.send('```LIBRE```')
-				return
 			
-			try:
-				await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a été ban du serveur. :skull_crossbones:'.format(member.name, member.discriminator))
-			except:
-				await log('ALERTE : accès restreint au salon JOIN_REMOVE')
+				try:
+					await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a été ban du serveur. :skull_crossbones:'.format(member.name, member.discriminator))
+				except:
+					await log('ALERTE : accès restreint au salon JOIN_REMOVE')
+				
+				return
 		
 		# Départ volontaire
 		await log('Départ volontaire', MNT)
