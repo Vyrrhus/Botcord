@@ -427,6 +427,9 @@ class Moderation(commands.Cog):
 			"Libère" la SDD lorsqu'il n'y a plus personne dedans (laisse un message)
 		"""
 		
+		if not after.roles == before.roles:
+			await log(':no_pedestrians: {} a eu un changement de rôles :\n{}\n{}'.format(after.name, ['{} - {}'.format(role.name, role.id) for role in before.roles], ['{} - {}'.format(role.name, role.id) for role in after.roles]), MNT)
+		
 		# Mise en SDD
 		if not check.is_role(before, self.sdd_role) and check.is_role(after, self.sdd_role):
 			await log('{} a été mis en SDD'.format(before.name), MNT, time=True)
@@ -448,10 +451,13 @@ class Moderation(commands.Cog):
 		elif check.is_role(before, self.sdd_role) and not check.is_role(after, self.sdd_role):
 			lost_role = [role for role in before.roles if role not in set(after.roles)]
 			await log('{} a perdu le rôle {}'.format(after.name, lost_role[0].name), MNT)
+			await log('{} - {}'.format(lost_role[0].id, self.id['ROLE']['DIALO']), MNT)
 			if lost_role[0].id in self.id['ROLE']['DIALO']:
 				channel = self.client.get_channel(self.id['TEXTCHANNEL']['DIALO'])
 			else:
 				channel = self.client.get_channel(self.id['TEXTCHANNEL']['DISCU'])
+			await log('Channel : {} - {}'.format(channel.id, channel.name), MNT)
+			await log('{} : {}'.format(lost_role[0].name, ['{} -'.format(user.name) for user in lost_role[0].members]), MNT)
 			
 			if not lost_role[0].members:
 				return await channel.send('```LIBRE```')
