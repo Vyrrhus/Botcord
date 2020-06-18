@@ -438,7 +438,7 @@ class Moderation(commands.Cog):
 				if item not in before.roles:
 					role = item
 					break
-			notification = ':green_circle: {} a obtenu le rôle : {}'.format(after.mention, role.name)
+			notification = ':green_circle: {} a obtenu le rôle : {}'
 		
 		else:
 			add_role = False
@@ -446,14 +446,14 @@ class Moderation(commands.Cog):
 				if item not in after.roles:
 					role = item
 					break
-			notification = ':red_circle: {} a perdu le rôle : {}'.format(after.mention, role.name)
+			notification = ':red_circle: {} a perdu le rôle : {}'
 		
-		await log(notification, MNT)
+		await log(notification.format(after.name, role.name), MNT)
 		
 		
 		# ANIMATION (rôles spécifiques donnés sur autorole)
 		if role.id in self.animation_role:
-			await self.client.get_channel(self.id['TEXTCHANNEL']['LOG_ANIMATION']).send(notification)
+			await self.client.get_channel(self.id['TEXTCHANNEL']['LOG_ANIMATION']).send(notification.format(after.mention, role.name))
 		
 		# Mise en SDD
 		if not check.is_role(before, self.sdd_role) and check.is_role(after, self.sdd_role):
