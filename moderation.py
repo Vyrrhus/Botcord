@@ -452,7 +452,10 @@ class Moderation(commands.Cog):
 		
 		
 		# ANIMATION (rôles spécifiques donnés sur autorole)
+		await log('ID role in : {} in {}'.format(role.id, self.animation_role), MNT)
 		if role.id in self.animation_role:
+			await log('TEST IF passé', MNT)
+			await log('id salon : {}'.format(self.id['TEXTCHANNEL']['LOG_ANIMATION']), MNT)
 			await self.client.get_channel(self.id['TEXTCHANNEL']['LOG_ANIMATION']).send(notification)
 		
 		# Mise en SDD
