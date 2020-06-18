@@ -20,6 +20,7 @@ class Moderation(commands.Cog):
 		self.id = tool.get_data('src/config/id.json')
 		self.text = tool.get_data('src/config/moderation/text.json')
 		self.sdd_role = self.id['ROLE']['DISCU'] + self.id['ROLE']['DIALO']
+		self.animation_role = self.id['ROLE']['ANIMATION']
 		# Exit lock to block event triggered by command
 		self.exit_lock = False
 		self.sdd_lock = False
@@ -427,8 +428,32 @@ class Moderation(commands.Cog):
 			"Libère" la SDD lorsqu'il n'y a plus personne dedans (laisse un message)
 		"""
 		
-		if not after.roles == before.roles:
-			await log(':no_pedestrians: {} a eu un changement de rôles :\n{}\n{}'.format(after.name, ['{} - {}'.format(role.name, role.id) for role in before.roles], ['{} - {}'.format(role.name, role.id) for role in after.roles]), MNT)
+		if after.roles == before.roles:
+			return
+		
+		# CHANGEMENT DE ROLES
+		if len(after.roles) > len(before.roles):
+			add_role = True
+			for item in after.roles:
+				if item not in before.roles:
+					role = item
+					break
+			notification = ':green_circle: {} a obtenu le rôle : {}'.format(after.mention, role.name)
+		
+		else:
+			add_role = False
+			for item in before.roles:
+				if item not in after.roles:
+					role = item
+					break
+			notification = ':red_circle: {} a perdu le rôle : {}'.format(after.mention, role.name)
+		
+		await log(notification, MNT)
+		
+		
+		# ANIMATION (rôles spécifiques donnés sur autorole)
+		if role.id in self.animation_role:
+			await self.client.get_channel(self.id['TEXTCHANNEL']['LOG_ANIMATION']).send(notification)
 		
 		# Mise en SDD
 		if not check.is_role(before, self.sdd_role) and check.is_role(after, self.sdd_role):
