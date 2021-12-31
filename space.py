@@ -23,7 +23,8 @@ class Space(commands.Cog):
 		self.dataUrlIni = []
 		self.dataUrlEnd = []
 		self.addUrl = []
-		self.timedelta = 300
+		self.currentSpace = None
+		self.timedelta = 600
 		self.timestampReached = False
 		self.topic = "Space en cours : {}"
 		self.message    = ":o: **DIRECT**   :  **{}**\nSuivez le Space twitter avec {} autres personnes\n:fast_forward: {}"
@@ -68,10 +69,17 @@ class Space(commands.Cog):
 			# Space en cours
 			else:
 				print("Space running")
-				self.dataUrlEnd.append({"url": cleanUrl, "timestamp": str(datetime.utcnow())})
 				metadata = {"title": audioSpace['metadata']['title'], "nb": audioSpace['participants']['total']}
-				await self.client.get_channel(self.spaceChannel).send(self.message.format(metadata["title"], metadata["nb"], cleanUrl))
-				await self.client.get_channel(self.spaceChannel).edit(topic=self.topic.format(cleanUrl))
+				channel = self.client.get_channel(self.spaceChannel)
+				message = await channel.send(self.message.format(metadata["title"], metadata["nb"], cleanUrl))
+				await channel.edit(topic=self.topic.format(cleanUrl))
+				try:
+					oldMessageId = [el for el in (self.dataUrlIni + self.addUrl) if el["url"] == self.currentSpace["url"]][0]["id"]
+					oldMessage = await channel.fetch_message(oldMessageId)
+					await oldMessage.delete()
+				except:
+					pass
+				self.dataUrlEnd.append({"url": cleanUrl, "timestamp": str(datetime.utcnow()), "id": message.id})
 
 	async def update(self):
 		await self.client.wait_until_ready()
@@ -93,6 +101,7 @@ class Space(commands.Cog):
 
 					self.timestampReached = True
 					self.hasFound = False
+					self.currentSpace = space
 					await page.goto(space["url"])
 					for i in range(5000):
 						await page.wait_for_timeout(1)
@@ -175,7 +184,7 @@ class Space(commands.Cog):
 
 		spaceUrls = list(set(spaceUrls))
 		for url in spaceUrls:
-			self.addUrl.append({"url": url, "timestamp": str(datetime.utcnow() - timedelta(seconds=self.timedelta))})
+			self.addUrl.append({"url": url, "timestamp": str(datetime.utcnow() - timedelta(seconds=self.timedelta)), "id": None})
 
 def setup(client):
 	client.add_cog(Space(client))
