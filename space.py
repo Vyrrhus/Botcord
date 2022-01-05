@@ -20,14 +20,13 @@ class Space(commands.Cog):
 		self.hasFound = False
 		self.spaceChannel = id["CHANNEL"]
 		self.pinnedMessage = id["PINNED"]
-		self.dataUrlIni = []
-		self.dataUrlEnd = []
-		self.addUrl = []
-		self.currentSpace = None
 		self.timedelta = 600
-		self.timestampReached = False
+		self.dataUrl = []
+		self.newUrl = []
+		self.catch = {}
+		self.msgID = None
 		self.topic = "Space en cours : {}"
-		self.message    = ":o: **DIRECT**   :  **{}**\nSuivez le Space twitter avec {} autres personnes\n:fast_forward: {}"
+		self.message    = "\n:small_blue_diamond: \"{}\" ({} participants)\n  >> <{}>"
 		self.endMessage = ":x: Le Space Twitter **{}** est maintenant terminé.\n{} personnes ont participé !"
 		asyncio.get_event_loop().create_task(self.update())
 
@@ -39,49 +38,42 @@ class Space(commands.Cog):
 	# FUNC
 
 	async def scraper(self, response):
-		"""
-			TO DO:
-			- handle errors if space doesn't exist
-		"""
 		# Response scraper : only AudioSpaceById
 		if ("AudioSpaceById" in response.url and not self.hasFound):
 			responseData = await response.json()
 			self.hasFound = True
 			audioSpace = responseData['data']['audioSpace']
+			url  = ""
+			meta = {}
 
 			if "errors" in responseData.keys() or not "metadata" in audioSpace.keys():
 				# URL invalide
-				print('Space url invalide')
-				return
+				pass
 
-			# Evite les doublons
-			cleanUrl = "https://twitter.com/i/spaces/{}".format(audioSpace['metadata']['rest_id'])
-			if cleanUrl in [el["url"] for el in self.dataUrlEnd]:
-				return
-
-			# Fin du Space, update le fichier initial (else "Running")
-			if audioSpace['metadata']['state'] == 'Ended':
-				print("Space ended")
-				metadata = {"title": audioSpace['metadata']['title'], "nb": audioSpace['metadata']['total_participated']}
-				await self.client.get_channel(self.spaceChannel).send(self.endMessage.format(metadata["title"], metadata["nb"]))
-				await self.client.get_channel(self.spaceChannel).edit(topic=None)
-
-			# Space en cours
 			else:
-				print("Space running")
-				metadata = {"title": audioSpace['metadata']['title'], "nb": audioSpace['participants']['total']}
-				channel = self.client.get_channel(self.spaceChannel)
-				message = await channel.send(self.message.format(metadata["title"], metadata["nb"], cleanUrl))
-				await channel.edit(topic=self.topic.format(cleanUrl))
-				try:
-					oldMessageId = [el for el in (self.dataUrlIni + self.addUrl) if el["url"] == self.currentSpace["url"]][0]["id"]
-					oldMessage = await channel.fetch_message(oldMessageId)
-					await oldMessage.delete()
-				except:
-					pass
-				self.dataUrlEnd.append({"url": cleanUrl, "timestamp": str(datetime.utcnow()), "id": message.id})
+				# Clean url and avoid copies
+				url = "https://twitter.com/i/spaces/{}".format(audioSpace['metadata']['rest_id'])
+				meta["title"] = audioSpace['metadata']['title']
+
+				# Fin du space
+				if audioSpace['metadata']['state'] == 'Ended':
+					meta["stop"] = True
+					meta["nb"]   = audioSpace['metadata']['total_participated']
+				
+				# Space en cours
+				else:
+					meta["stop"] = False
+					meta["nb"]   = audioSpace['participants']['total']
+			
+			self.catch[url] = meta
+			return
 
 	async def update(self):
+		"""
+			TO DO :
+			- classer les Space par popularité ?
+			- Virer l'épingle
+		"""
 		await self.client.wait_until_ready()
 		await asyncio.sleep(1)
 
@@ -92,37 +84,58 @@ class Space(commands.Cog):
 
 			while True:
 				# Get all Space url
-				self.dataUrlIni = tool.get_data(self.src)
-				self.dataUrlEnd = []
-				for space in (self.dataUrlIni + self.addUrl):
+				self.dataUrl = tool.get_data(self.src)
+				totalSpace = self.dataUrl + self.newUrl
+				self.newUrl = []
+				for space in (totalSpace):
 					if (datetime.utcnow() - tool.str_to_date(space["timestamp"])).seconds < self.timedelta:
-						self.dataUrlEnd.append(space)
 						continue
-
-					self.timestampReached = True
+					try:
+						await page.goto(space["url"])
+					except Exception as e:
+						print(e)
+						pass
 					self.hasFound = False
-					self.currentSpace = space
-					await page.goto(space["url"])
 					for i in range(5000):
-						await page.wait_for_timeout(1)
+						await page.wait_for_timeout(5)
 						if self.hasFound:
 							break
-				
-				self.addUrl = []
 
-				if self.timestampReached:
-					self.timestampReached = False
-					tool.set_data(self.dataUrlEnd, self.src)
+				# Wait to ensure every response has been catched
+				await asyncio.sleep(10)
 
-					if self.pinnedMessage:
-						urlContent = ""
-						if len(self.dataUrlEnd):
-							urlContent = "".join(["\n>{}".format(el["url"]) for el in self.dataUrlEnd])
-						content = ":microphone2: **SPACE TWITTER EN COURS**\n```python\n\"N'hésitez pas à partager le lien d'un Space Twitter dans ce salon !\"```\n:white_small_square: Actuellement **{}** Space en cours : {}".format(len(self.dataUrlEnd), urlContent)
-						channel = self.client.get_channel(self.spaceChannel)
-						message = await channel.fetch_message(self.pinnedMessage)
-						await message.edit(content=content)
-				await page.wait_for_timeout(5)
+				self.catch.pop('', None)
+				if self.catch:
+					channel = self.client.get_channel(self.spaceChannel)
+					for url in self.catch:
+						matchingSpace = [space for space in self.dataUrl if space["url"] == url]
+						if matchingSpace:
+							self.dataUrl = [item for item in self.dataUrl if item not in matchingSpace]
+						space = self.catch[url]
+						# Space ending
+						if space["stop"]:
+							await channel.send(self.endMessage.format(space["title"], space["nb"]))
+						else:
+							self.dataUrl.append({"url": url, "title": space["title"], "nb": space["nb"], "timestamp": str(datetime.utcnow())})
+					# Suppression du message précédent
+					if self.msgID:
+						try:
+							message = await channel.fetch_message(self.msgID)
+							await message.delete()
+						except Exception as e:
+							print(e)
+
+					# Nouveau message pour les Space en cours
+					if self.dataUrl:
+						msg = ":microphone2: **SPACE TWITTER EN COURS**\n```python\n\"N'hésitez pas à partager le lien d'un Space Twitter dans ce salon !\"```:o: **DIRECT** - **{}** Space en cours :".format(len(self.dataUrl))
+						for space in self.dataUrl:
+							msg += "{}".format(self.message.format(space["title"], space["nb"], space["url"]))
+						newMessage = await channel.send(msg)
+						self.msgID = newMessage.id
+					tool.set_data(self.dataUrl, self.src)
+
+				await page.wait_for_timeout(5000)
+				await asyncio.sleep(10)
 
 				
 	###########################################
@@ -173,6 +186,10 @@ class Space(commands.Cog):
 		if (message.channel.id != self.spaceChannel):
 			return
 		
+		# Avoid bot messages
+		if (message.author.bot):
+			return
+
 		content   = message.content
 		spaceUrls = [el for el in content.replace("\n", " ").split(" ") if "twitter.com/i/spaces/" in el]
 		#... with space link within
@@ -184,7 +201,7 @@ class Space(commands.Cog):
 
 		spaceUrls = list(set(spaceUrls))
 		for url in spaceUrls:
-			self.addUrl.append({"url": url, "timestamp": str(datetime.utcnow() - timedelta(seconds=self.timedelta)), "id": None})
+			self.newUrl.append({"url": url, "timestamp": str(datetime.utcnow() - timedelta(seconds=self.timedelta)), "id": None})
 
 def setup(client):
 	client.add_cog(Space(client))

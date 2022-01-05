@@ -64,7 +64,7 @@ async def logout(ctx):
 	
 #	await log('{}'.format(['{} - {}'.format(role.name, role.id) for role in ctx.author.roles]), MONITOR_MAIN)
 	await log('HAL 9000 logging out', MONITOR_MAIN, time=True)
-	await client.logout()
+	await client.close()
 	
 @client.command(name='extension')
 @commands.check(check.check_is_me)
