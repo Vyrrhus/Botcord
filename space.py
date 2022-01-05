@@ -24,7 +24,11 @@ class Space(commands.Cog):
 		self.dataUrl = []
 		self.newUrl = []
 		self.catch = {}
-		self.msgID = None
+		try:
+			self.msgID = id["MSG"]
+		except:
+			self.msgID = None
+		self.timedelta = 20
 		self.topic = "Space en cours : {}"
 		self.message    = "\n:small_blue_diamond: \"{}\" ({} participants)\n  >> <{}>"
 		self.endMessage = ":x: Le Space Twitter **{}** est maintenant terminé.\n{} personnes ont participé !"
@@ -131,7 +135,10 @@ class Space(commands.Cog):
 						for space in self.dataUrl:
 							msg += "{}".format(self.message.format(space["title"], space["nb"], space["url"]))
 						newMessage = await channel.send(msg)
+						await newMessage.pin()
 						self.msgID = newMessage.id
+						self.id["MSG"] = self.msgID
+						tool.set_data(self.id, "src/space/config.json")
 					tool.set_data(self.dataUrl, self.src)
 
 				await page.wait_for_timeout(5000)
