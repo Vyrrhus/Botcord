@@ -14,13 +14,12 @@ from src.tool import log
 
 class Space(commands.Cog):
 	def __init__(self, client):
-		id = tool.get_data("src/space/config.json")
 		self.client	= client
 		self.src = "src/space/url.json"
+		self.config = "src/space/config.json"
+		id = tool.get_data(self.config)
 		self.hasFound = False
 		self.spaceChannel = id["CHANNEL"]
-		self.pinnedMessage = id["PINNED"]
-		self.timedelta = 600
 		self.dataUrl = []
 		self.newUrl = []
 		self.catch = {}
@@ -28,7 +27,7 @@ class Space(commands.Cog):
 			self.msgID = id["MSG"]
 		except:
 			self.msgID = None
-		self.timedelta = 20
+		self.timedelta = 600
 		self.topic = "Space en cours : {}"
 		self.message    = "\n:small_blue_diamond: \"{}\" ({} participants)\n  >> <{}>"
 		self.endMessage = ":x: Le Space Twitter **{}** est maintenant terminé.\n{} personnes ont participé !"
@@ -60,7 +59,7 @@ class Space(commands.Cog):
 				meta["title"] = audioSpace['metadata']['title']
 
 				# Fin du space
-				if audioSpace['metadata']['state'] == 'Ended':
+				if audioSpace['metadata']['state'] == 'Ended' or audioSpace['metadata']['state'] == 'TimedOut':
 					meta["stop"] = True
 					meta["nb"]   = audioSpace['metadata']['total_participated']
 				
@@ -122,6 +121,7 @@ class Space(commands.Cog):
 						else:
 							self.dataUrl.append({"url": url, "title": space["title"], "nb": space["nb"], "timestamp": str(datetime.utcnow())})
 					# Suppression du message précédent
+					self.catch = {}
 					if self.msgID:
 						try:
 							message = await channel.fetch_message(self.msgID)
@@ -137,8 +137,9 @@ class Space(commands.Cog):
 						newMessage = await channel.send(msg)
 						await newMessage.pin()
 						self.msgID = newMessage.id
-						self.id["MSG"] = self.msgID
-						tool.set_data(self.id, "src/space/config.json")
+						config = tool.get_data(self.config)
+						config["MSG"] = self.msgID
+						tool.set_data(config, self.config)
 					tool.set_data(self.dataUrl, self.src)
 
 				await page.wait_for_timeout(5000)
@@ -195,6 +196,8 @@ class Space(commands.Cog):
 		
 		# Avoid bot messages
 		if (message.author.bot):
+			if message.type == discord.MessageType.pins_add:
+				await message.delete()
 			return
 
 		content   = message.content
