@@ -10,21 +10,26 @@ from playwright.async_api import async_playwright
 import src.check as check
 import src.tool as tool
 from src.tool import log
-# from src.config.settings import MONITOR_SPACE as MONITOR
+from src.config.settings import MONITOR_MODERATION as MONITOR
 
 class Space(commands.Cog):
 	def __init__(self, client):
 		self.client	= client
-		self.src = "src/space/url.json"
 		self.config = "src/space/config.json"
-		id = tool.get_data(self.config)
+		self.src = "src/space/url.json"
+		config = tool.get_data(self.config)
+		self.spaceChannel = config["CHANNEL"]
+		try:
+			self.invite = config["INVITATION"]
+		except:
+			self.invite = {}
 		self.hasFound = False
-		self.spaceChannel = id["CHANNEL"]
+		
 		self.dataUrl = []
 		self.newUrl = []
 		self.catch = {}
 		try:
-			self.msgID = id["MSG"]
+			self.msgID = config["MSG"]
 		except:
 			self.msgID = None
 		self.timedelta = 600
@@ -212,6 +217,52 @@ class Space(commands.Cog):
 		spaceUrls = list(set(spaceUrls))
 		for url in spaceUrls:
 			self.newUrl.append({"url": url, "timestamp": str(datetime.utcnow() - timedelta(seconds=self.timedelta)), "id": None})
+			print("ADD URL : {}".format(url))
+
+	# ON MEMBER JOIN
+	@commands.Cog.listener()
+	async def on_member_join(self, member):
+		"""
+			Check if Member has been invited with a link redirecting on the specific space channel
+
+			get current invites, store
+
+			on member join:
+			get and store new invites
+				check invites to see if one has incremented
+				if one has, that's your invite, return
+
+				else:
+					if an invite is missing, it might be it was a limited use one or expired- add it to a list of things to return
+					check vanity invite to see if it incremented
+						if it did, return that
+					poll audit log to see if any invites were created recently
+						if one was, add that to things to return, return
+			
+			else :mystery: 
+		
+		"""
+		channel 	= self.client.get_channel(self.spaceChannel)
+		listInvites = await channel.invites()
+
+		# Try except to ensure it works
+		try:
+			# Check for every invite url directing towards this channel
+			for invite in listInvites:
+				if invite.id in self.invite:
+					# Check if number of uses changed
+					if self.invite[invite.id] == invite.uses:
+						continue
+					# Log and update uses
+					await log("{} used a link towards Space Twitter channel".format(member.name), MONITOR)
+
+				# Update invite id / uses and save it
+				self.invite[invite.id] = invite.uses
+				config = tool.get_data(self.config)
+				config["INVITE_ID"] = self.invite
+				tool.set_data(config, self.config)
+		except:
+			pass
 
 def setup(client):
 	client.add_cog(Space(client))

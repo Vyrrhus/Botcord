@@ -22,10 +22,7 @@ class Melanchon(commands.Cog):
         content = message.content.lower()
         check = [el in content for el in self.msgList]
 
-        print(content)
-
         if True in check:
-            print('ok')
             await message.channel.send('{} : https://twitter.com/T_Bouhafs/status/1468982780264693763'.format(message.author.mention))
 
 
