@@ -253,7 +253,7 @@ class Space(commands.Cog):
 		try:
 			# Check for every invite url directing towards this channel
 			for invite in listInvites:
-				await log("Invitation sur le channel #{} : [{}]".format(channel.name, invite.url), MONITOR)
+				await log("Invitation sur le channel #{} : [{}] ({})".format(channel.name, invite.id, invite.uses), MONITOR)
 				if invite.id in self.invite:
 					# Check if number of uses changed
 					if self.invite[invite.id] == invite.uses:
