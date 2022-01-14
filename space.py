@@ -65,12 +65,15 @@ class Space(commands.Cog):
 
 				# Fin du space
 				if audioSpace['metadata']['state'] == 'Ended' or audioSpace['metadata']['state'] == 'TimedOut':
-					meta["stop"] = True
-					meta["nb"]   = audioSpace['metadata']['total_participated']
+					meta["state"] = "stop" 
+					meta["nb"]    = audioSpace['metadata']['total_participated']
+
+				if audioSpace["metadata"]["state"] == "NotStarted":
+					meta["state"] = "notStarted"
 				
 				# Space en cours
 				else:
-					meta["stop"] = False
+					meta["state"] = "run"
 					meta["nb"]   = audioSpace['participants']['total']
 			
 			self.catch[url] = meta
@@ -121,10 +124,10 @@ class Space(commands.Cog):
 							self.dataUrl = [item for item in self.dataUrl if item not in matchingSpace]
 						space = self.catch[url]
 						# Space ending
-						if space["stop"]:
+						if space["state"] == "stop":
 							await channel.send(self.endMessage.format(space["title"], space["nb"]))
 						else:
-							self.dataUrl.append({"url": url, "title": space["title"], "nb": space["nb"], "timestamp": str(datetime.utcnow())})
+							self.dataUrl.append({"state": space["state"], "url": url, "title": space["title"], "nb": space["nb"], "timestamp": str(datetime.utcnow())})
 					# Suppression du message précédent
 					self.catch = {}
 					if self.msgID:
@@ -138,7 +141,8 @@ class Space(commands.Cog):
 					if self.dataUrl:
 						msg = ":microphone2: **SPACE TWITTER EN COURS**\n```python\n\"N'hésitez pas à partager le lien d'un Space Twitter dans ce salon !\"```:o: **DIRECT** - **{}** Space en cours :".format(len(self.dataUrl))
 						for space in self.dataUrl:
-							msg += "{}".format(self.message.format(space["title"], space["nb"], space["url"]))
+							if space["state"] == "run":
+								msg += "{}".format(self.message.format(space["title"], space["nb"], space["url"]))
 						newMessage = await channel.send(msg)
 						await newMessage.pin()
 						self.msgID = newMessage.id
@@ -249,6 +253,7 @@ class Space(commands.Cog):
 		try:
 			# Check for every invite url directing towards this channel
 			for invite in listInvites:
+				await log("Invitation sur le channel #{} : [{}]".format(channel.name, invite.url), MONITOR)
 				if invite.id in self.invite:
 					# Check if number of uses changed
 					if self.invite[invite.id] == invite.uses:
@@ -261,7 +266,8 @@ class Space(commands.Cog):
 				config = tool.get_data(self.config)
 				config["INVITE_ID"] = self.invite
 				tool.set_data(config, self.config)
-		except:
+		except Exception as e:
+			await log("Error for invitation url : {}".format(str(e)), MONITOR)
 			pass
 
 def setup(client):
