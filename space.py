@@ -65,15 +65,12 @@ class Space(commands.Cog):
 
 				# Fin du space
 				if audioSpace['metadata']['state'] == 'Ended' or audioSpace['metadata']['state'] == 'TimedOut':
-					meta["state"] = "stop" 
-					meta["nb"]    = audioSpace['metadata']['total_participated']
-
-				if audioSpace["metadata"]["state"] == "NotStarted":
-					meta["state"] = "notStarted"
+					meta["stop"] = True
+					meta["nb"]   = audioSpace['metadata']['total_participated']
 				
 				# Space en cours
 				else:
-					meta["state"] = "run"
+					meta["stop"] = False
 					meta["nb"]   = audioSpace['participants']['total']
 			
 			self.catch[url] = meta
@@ -124,10 +121,10 @@ class Space(commands.Cog):
 							self.dataUrl = [item for item in self.dataUrl if item not in matchingSpace]
 						space = self.catch[url]
 						# Space ending
-						if space["state"] == "stop":
+						if space["stop"]:
 							await channel.send(self.endMessage.format(space["title"], space["nb"]))
 						else:
-							self.dataUrl.append({"state": space["state"], "url": url, "title": space["title"], "nb": space["nb"], "timestamp": str(datetime.utcnow())})
+							self.dataUrl.append({"url": url, "title": space["title"], "nb": space["nb"], "timestamp": str(datetime.utcnow())})
 					# Suppression du message précédent
 					self.catch = {}
 					if self.msgID:
@@ -141,8 +138,7 @@ class Space(commands.Cog):
 					if self.dataUrl:
 						msg = ":microphone2: **SPACE TWITTER EN COURS**\n```python\n\"N'hésitez pas à partager le lien d'un Space Twitter dans ce salon !\"```:o: **DIRECT** - **{}** Space en cours :".format(len(self.dataUrl))
 						for space in self.dataUrl:
-							if space["state"] == "run":
-								msg += "{}".format(self.message.format(space["title"], space["nb"], space["url"]))
+							msg += "{}".format(self.message.format(space["title"], space["nb"], space["url"]))
 						newMessage = await channel.send(msg)
 						await newMessage.pin()
 						self.msgID = newMessage.id
@@ -266,8 +262,7 @@ class Space(commands.Cog):
 				config = tool.get_data(self.config)
 				config["INVITE_ID"] = self.invite
 				tool.set_data(config, self.config)
-		except Exception as e:
-			await log("Error for invitation url : {}".format(str(e)), MONITOR)
+		except:
 			pass
 
 def setup(client):
