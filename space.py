@@ -62,16 +62,15 @@ class Space(commands.Cog):
 				# Clean url and avoid copies
 				url = "https://twitter.com/i/spaces/{}".format(audioSpace['metadata']['rest_id'])
 				meta["title"] = audioSpace['metadata']['title']
+				meta["state"] = audioSpace['metadata']['state']
 
-				# Fin du space
-				if audioSpace['metadata']['state'] == 'Ended' or audioSpace['metadata']['state'] == 'TimedOut':
-					meta["stop"] = True
-					meta["nb"]   = audioSpace['metadata']['total_participated']
+				if meta["state"] == 'Ended' or meta["state"] == 'TimedOut':
+					meta["total_nb"] = audioSpace['metadata']['total_participated']
 				
-				# Space en cours
+				elif meta["state"] == 'Running':
+					meta["nb"] = audioSpace['participants']['total']
 				else:
-					meta["stop"] = False
-					meta["nb"]   = audioSpace['participants']['total']
+					meta["nb"] = 0
 			
 			self.catch[url] = meta
 			return
@@ -121,10 +120,10 @@ class Space(commands.Cog):
 							self.dataUrl = [item for item in self.dataUrl if item not in matchingSpace]
 						space = self.catch[url]
 						# Space ending
-						if space["stop"]:
-							await channel.send(self.endMessage.format(space["title"], space["nb"]))
+						if space["state"] == "Ended" or space["state"] == "TimedOut":
+							await channel.send(self.endMessage.format(space["title"], space["total_nb"]))
 						else:
-							self.dataUrl.append({"url": url, "title": space["title"], "nb": space["nb"], "timestamp": str(datetime.utcnow())})
+							self.dataUrl.append({"state": space["state"], "url": url, "title": space["title"], "nb": space["nb"], "timestamp": str(datetime.utcnow())})
 					# Suppression du message précédent
 					self.catch = {}
 					if self.msgID:
@@ -136,15 +135,19 @@ class Space(commands.Cog):
 
 					# Nouveau message pour les Space en cours
 					if self.dataUrl:
-						msg = ":microphone2: **SPACE TWITTER EN COURS**\n```python\n\"N'hésitez pas à partager le lien d'un Space Twitter dans ce salon !\"```:o: **DIRECT** - **{}** Space en cours :".format(len(self.dataUrl))
+						msgContent = "" 
+						nbRunning = 0
 						for space in self.dataUrl:
-							msg += "{}".format(self.message.format(space["title"], space["nb"], space["url"]))
-						newMessage = await channel.send(msg)
-						await newMessage.pin()
-						self.msgID = newMessage.id
-						config = tool.get_data(self.config)
-						config["MSG"] = self.msgID
-						tool.set_data(config, self.config)
+							if space["state"] == "Running":
+								nbRunning += 1
+								msgContent += "{}".format(self.message.format(space["title"], space["nb"], space["url"]))
+						if nbRunning:
+							msg = await channel.send(":microphone2: **SPACE TWITTER EN COURS**\n```python\n\"N'hésitez pas à partager le lien d'un Space Twitter dans ce salon !\"```:o: **DIRECT** - **{}** Space en cours :{}".format(nbRunning, msgContent))
+							await msg.pin()
+							self.msgID = msg.id
+							config = tool.get_data(self.config)
+							config["MSG"] = self.msgID
+							tool.set_data(config, self.config)
 					tool.set_data(self.dataUrl, self.src)
 
 				await page.wait_for_timeout(5000)
