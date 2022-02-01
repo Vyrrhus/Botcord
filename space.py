@@ -65,7 +65,7 @@ class Space(commands.Cog):
 				meta["state"] = audioSpace['metadata']['state']
 
 				if meta["state"] == 'Ended' or meta["state"] == 'TimedOut':
-					meta["total_nb"] = audioSpace['metadata']['total_participated']
+					meta["total_nb"] = audioSpace['metadata']['total_live_listeners']
 				
 				elif meta["state"] == 'Running':
 					meta["nb"] = audioSpace['participants']['total']
