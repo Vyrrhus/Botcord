@@ -2,6 +2,7 @@ import discord
 import asyncio
 from numpy import random as rand
 from discord.ext import commands
+import asyncio
 
 from src.config.settings import MONITOR_MAIN as MNT
 
@@ -9,6 +10,8 @@ class Melanchon(commands.Cog):
     def __init__(self, client):
         self.client  = client
         self.msgList = ['melanchon', 'mélanchon']
+        self.lepen = ['le pen', 'lepen']
+        self.lepen_send = False
     
     ####################
 	#   EVENTS
@@ -26,7 +29,19 @@ class Melanchon(commands.Cog):
         if True in check:
             tweet = ['https://twitter.com/T_Bouhafs/status/1468982780264693763',
                      'https://twitter.com/T_Bouhafs/status/1488492002165542912']
-            await message.channel.send('{} : {}'.format(message.author.mention, tweet[rand.randint(2)]))            
+            await message.channel.send('{} : {}'.format(message.author.mention, tweet[rand.randint(2)]))   
+
+    
+    # Ajoute un message pour Le Pen
+        check_lepen = [el in content for el in self.msgList]
+        check_vote  = [el in content for el in ["vote", "voter"]]
+
+        if True in check_lepen and True in check_vote and not self.lepen_send:
+            await message.channel.send('{}, :loudspeaker: **Il ne faut pas donner une seule voix à Madame Le Pen !** :loudspeaker:'.format(message.author.mention))
+            self.lepen_send = True
+            await asyncio.sleep(180)
+            self.lepen_send = False
+
 
 def setup(client):
 	client.add_cog(Melanchon(client))
