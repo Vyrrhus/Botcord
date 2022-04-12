@@ -33,7 +33,7 @@ class Melanchon(commands.Cog):
 
     
     # Ajoute un message pour Le Pen
-        check_lepen = [el in content for el in self.msgList]
+        check_lepen = [el in content for el in self.lepen]
         check_vote  = [el in content for el in ["vote", "voter"]]
 
         if True in check_lepen and True in check_vote and not self.lepen_send:
