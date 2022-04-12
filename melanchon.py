@@ -37,7 +37,7 @@ class Melanchon(commands.Cog):
         check_vote  = [el in content for el in ["vote", "voter"]]
 
         if True in check_lepen and True in check_vote and not self.lepen_send:
-            await message.channel.send('{}, :loudspeaker: **Il ne faut pas donner une seule voix à Madame Le Pen !** :loudspeaker:'.format(message.author.mention))
+            await message.channel.send('{}, :loudspeaker: **Il ne faut pas donner une seule voix à Madame Le Pen !** :loudspeaker:'.format(message.author.name))
             self.lepen_send = True
             await asyncio.sleep(180)
             self.lepen_send = False
