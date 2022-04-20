@@ -29,19 +29,7 @@ class Melanchon(commands.Cog):
         if True in check:
             tweet = ['https://twitter.com/T_Bouhafs/status/1468982780264693763',
                      'https://twitter.com/T_Bouhafs/status/1488492002165542912']
-            await message.channel.send('{} : {}'.format(message.author.mention, tweet[rand.randint(2)]))   
-
-    
-    # Ajoute un message pour Le Pen
-        check_lepen = [el in content for el in self.lepen]
-        check_vote  = [el in content for el in ["vote", "voter"]]
-
-        if True in check_lepen and True in check_vote and not self.lepen_send:
-            await message.channel.send('{}, :loudspeaker: **Il ne faut pas donner une seule voix à Madame Le Pen !** :loudspeaker:'.format(message.author.name))
-            self.lepen_send = True
-            await asyncio.sleep(1800)
-            self.lepen_send = False
-
+            await message.channel.send('{} : {}'.format(message.author.mention, tweet[rand.randint(2)]))
 
 def setup(client):
 	client.add_cog(Melanchon(client))
