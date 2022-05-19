@@ -108,5 +108,5 @@ class File(commands.Cog):
 		
 		return
 	
-def setup(client):
-	client.add_cog(File(client))
+async def setup(client):
+	await client.add_cog(File(client))

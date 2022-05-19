@@ -79,7 +79,7 @@ async def extension(ctx):
 			await ctx.channel.send('Extensions chargées: aucune.')
 	except Exception as error:
 		await log('Erreur: extension.json impossible à charger.', MONITOR_MAIN)
-	
+
 @client.command(name='load')
 @commands.check(check.check_is_me)
 async def load(ctx, extension):
@@ -91,7 +91,7 @@ async def load(ctx, extension):
 	- 'file'
 	"""
 	try:
-		client.load_extension(extension.lower())
+		await client.load_extension(extension.lower())
 		
 		try:
 			exts = tool.get_data('src/config/extension.json')
@@ -119,7 +119,7 @@ async def unload(ctx, extension):
 	- 'file'
 	"""
 	try:
-		client.unload_extension(extension.lower())
+		await client.unload_extension(extension.lower())
 		
 		try:
 			exts = tool.get_data('src/config/extension.json')
@@ -140,19 +140,19 @@ async def unload(ctx, extension):
 #                  RUN                    #
 ###########################################
 
-if __name__ == '__main__':
+async def main():
+	EXTENSIONS = tool.get_data('src/config/extension.json')
+	for extension in EXTENSIONS['LIST']:
+		try:
+			await client.load_extension(extension)
+			print(f'{extension} loaded successfully')
+		except:
+			traceback.print_exc()
+	
 	try:
-		EXTENSIONS = tool.get_data('src/config/extension.json')
-		for extension in EXTENSIONS['LIST']:
-			try:
-				client.load_extension(extension)
-				print('{} loaded successfully'.format(extension))
-			except:
-				traceback.print_exc()
-	except Exception as error:
-		pass
+		await client.start(TOKEN)
+	except:
+		traceback.print_exc()
 
-try:
-	client.run(TOKEN, reconnect=False)
-except:
-	traceback.print_exc()
+if __name__ == '__main__':
+	asyncio.run(main())

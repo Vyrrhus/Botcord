@@ -634,5 +634,5 @@ class Twitter(commands.Cog):
 #			await msg_emb.edit(content='MAX_TIMEDELTA a été mis à jour [{}h]'.format(value), embed=None)
 #			return
 		
-def setup(client):
-	client.add_cog(Twitter(client))
+async def setup(client):
+	await client.add_cog(Twitter(client))

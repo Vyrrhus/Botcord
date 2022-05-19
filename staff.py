@@ -112,5 +112,5 @@ class Staff(commands.Cog):
 	#                 EVENTS                  #
 	###########################################
 	
-def setup(client):
-	client.add_cog(Staff(client))
+async def setup(client):
+	await client.add_cog(Staff(client))

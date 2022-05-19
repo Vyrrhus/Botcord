@@ -268,5 +268,5 @@ class Space(commands.Cog):
 		except:
 			pass
 
-def setup(client):
-	client.add_cog(Space(client))
+async def setup(client):
+	await client.add_cog(Space(client))

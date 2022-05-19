@@ -34,6 +34,7 @@ class Moderation(commands.Cog):
 		"""	Les commandes de ce cog ne peuvent être utilisées que par un staff ou un modérateur.
 			En outre, elles ne sont utilisables que dans le salon de modération
 		"""
+		print("MODERATION COG CHECK")
 		try:
 			return check.is_role(ctx.author, self.id['ROLE']['MODER']) and check.in_channel(ctx.channel, self.id['TEXTCHANNEL']['CHECK_MODER'])
 		except:
@@ -489,5 +490,5 @@ class Moderation(commands.Cog):
 		else:
 			return
 		
-def setup(client):
-	client.add_cog(Moderation(client))
+async def setup(client):
+	await client.add_cog(Moderation(client))
