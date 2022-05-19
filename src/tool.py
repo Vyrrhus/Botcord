@@ -18,7 +18,8 @@ async def log(text, monitor, time=False, file=None):
 
 # CONVERTER
 def str_to_date(str_time):
-	return datetime.strptime(str_time, '%Y-%m-%d %H:%M:%S.%f')
+	return datetime.strptime(str_time, '%Y-%m-%d %H:%M:%S.%f%z')
+	
 
 # HANDLING FILES
 def get_data(outfile, default={}):

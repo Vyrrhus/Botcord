@@ -24,6 +24,7 @@ class Moderation(commands.Cog):
 		# Exit lock to block event triggered by command
 		self.exit_lock = False
 		self.sdd_lock = False
+		self.log = client.get_channel(self.id['TEXTCHANNEL']['LOG'])
 	
 	###########################################
 	#                  CHECKS                 #
@@ -60,7 +61,7 @@ class Moderation(commands.Cog):
 		EMB = action.embed(self.client, 0xaa8800)
 		
 		# Notification aux modérateurs
-		await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
+		await self.log.send(content=None, embed=EMB)
 		await ctx.channel.send(':warning: {} a reçu un warn'.format(target.mention))
 		
 		# Envoi du warn
@@ -96,7 +97,7 @@ class Moderation(commands.Cog):
 		EMB = action.embed(self.client, 0x995500)
 		
 		# Notification aux modérateurs
-		await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
+		await self.log.send(content=None, embed=EMB)
 		await ctx.channel.send(':hammer: {} a été kick du serveur.'.format(target.mention))
 		
 		# Kick
@@ -136,7 +137,7 @@ class Moderation(commands.Cog):
 		EMB = action.embed(self.client, 0x550000)
 		
 		# Notification aux modérateurs
-		await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
+		await self.log.send(content=None, embed=EMB)
 		await ctx.channel.send(':skull_crossbones: {} a été ban du serveur.'.format(target.mention))
 		
 		# Ban
@@ -219,15 +220,16 @@ class Moderation(commands.Cog):
 		"""
 		await log('{} a rejoint le serveur'.format(member.name), MNT, time=True)
 		
+		channel_rem = self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE'])
 		logs = tool.get_data('src/config/moderation/data.json')
 		list_log = []
 		for e in logs:
 			if logs[e]['user'] == member.id:
 				list_log.append(e)
 		if not list_log:
-			await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{} a rejoint le serveur.'.format(member.mention))
+			await channel_rem.send('{} a rejoint le serveur.'.format(member.mention))
 			return
-		await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send(':star: {} a rejoint le serveur : {} logs.'.format(member.mention, len(list_log)))
+		await channel_rem.send(':star: {} a rejoint le serveur : {} logs.'.format(member.mention, len(list_log)))
 				
 	# ON MEMBER REMOVE
 	@commands.Cog.listener()
@@ -261,8 +263,9 @@ class Moderation(commands.Cog):
 				await log("KICK manuel", MNT)
 				action = ACTION('Kick', entry.target.id, entry.user.id, entry.created_at, reason=entry.reason)
 				EMB = action.embed(self.client, 0x995500)
-				await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
-				await self.client.get_channel(self.id['TEXTCHANNEL']['MODER']).send(':hammer: {} a été kick du serveur.'.format(str(entry.target)))
+				await self.log.send(content=None, embed=EMB)
+				channel_mod = self.client.get_channel(self.id['TEXTCHANNEL']['MODER'])
+				await channel_mod.send(':hammer: {} a été kick du serveur.'.format(str(entry.target)))
 				action.save('src/config/moderation/data.json')
 				
 				# Check SDD
@@ -276,7 +279,8 @@ class Moderation(commands.Cog):
 							await channel.send('```LIBRE```')
 			
 				try:
-					await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a été kick du serveur. :hammer:'.format(member.name, member.discriminator))
+					channel_rem = self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE'])
+					await channel_rem.send('{}#{} a été kick du serveur. :hammer:'.format(member.name, member.discriminator))
 				except:
 					await log('ALERTE : accès restreint au salon JOIN_REMOVE')
 					
@@ -290,8 +294,9 @@ class Moderation(commands.Cog):
 				await log('BAN manuel', MNT)
 				action = ACTION('Ban', entry.target.id, entry.user.id, entry.created_at, reason=entry.reason)
 				EMB = action.embed(self.client, 0x550000)
-				await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
-				await self.client.get_channel(self.id['TEXTCHANNEL']['MODER']).send(':skull_crossbones: {} a été ban du serveur.'.format(str(entry.target)))
+				await self.log.send(content=None, embed=EMB)
+				channel_mod = self.client.get_channel(self.id['TEXTCHANNEL']['MODER'])
+				await channel_mod.send(':skull_crossbones: {} a été ban du serveur.'.format(str(entry.target)))
 				action.save('src/config/moderation/data.json')
 				
 				# Check SDD
@@ -305,7 +310,8 @@ class Moderation(commands.Cog):
 							await channel.send('```LIBRE```')
 			
 				try:
-					await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a été ban du serveur. :skull_crossbones:'.format(member.name, member.discriminator))
+					channel_rem = self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE'])
+					await channel_rem.send('{}#{} a été ban du serveur. :skull_crossbones:'.format(member.name, member.discriminator))
 				except:
 					await log('ALERTE : accès restreint au salon JOIN_REMOVE')
 				
@@ -314,7 +320,8 @@ class Moderation(commands.Cog):
 		# Départ volontaire
 		await log('Départ volontaire', MNT)
 		try:
-			await self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE']).send('{}#{} a quitté le serveur.'.format(member.name, member.discriminator))
+			channel_rem = self.client.get_channel(self.id['TEXTCHANNEL']['JOIN_REMOVE'])
+			await channel_rem.send('{}#{} a quitté le serveur.'.format(member.name, member.discriminator))
 		except:
 			await log('ALERTE : accès restreint au salon JOIN_REMOVE')
 			
@@ -326,7 +333,8 @@ class Moderation(commands.Cog):
 				if role.id == self.id['ROLE']['DIALO'] and not role.members:
 					channel = self.client.get_channel(self.id['TEXTCHANNEL']['DIALO'])
 					await channel.send('```LIBRE```')
-			await self.client.get_channel(self.id['TEXTCHANNEL']['MODER']).send(':no_pedestrians: {} a pris la fuite de la SDD !'.format(member.mention))
+			channel_mod = self.client.get_channel(self.id['TEXTCHANNEL']['MODER'])
+			await channel_mod.send(':no_pedestrians: {} a pris la fuite de la SDD !'.format(member.mention))
 		
 		
 	# ON RAW REACTION ADD
@@ -411,7 +419,7 @@ class Moderation(commands.Cog):
 		
 		# Notification dans le salon de log
 		EMB = action.embed(self.client, action.color)
-		await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
+		await self.log.send(content=None, embed=EMB)
 		
 		# Sauvegarde du log
 		action.save('src/config/moderation/data.json')
@@ -454,7 +462,8 @@ class Moderation(commands.Cog):
 		
 		# ANIMATION (rôles spécifiques donnés sur autorole)
 		if role.id in self.animation_role:
-			await self.client.get_channel(self.id['TEXTCHANNEL']['LOG_ANIMATION']).send(notification.format(after.mention, role.name))
+			log_anim = self.client.get_channel(self.id['TEXTCHANNEL']['LOG_ANIMATION'])
+			await log_anim.send(notification.format(after.mention, role.name))
 		
 		# Mise en SDD
 		if not check.is_role(before, self.sdd_role) and check.is_role(after, self.sdd_role):
@@ -471,7 +480,7 @@ class Moderation(commands.Cog):
 				if entry.target == after and datetime.utcnow() - entry.created_at < timedelta(seconds=10):
 					action = ACTION('MISE EN SDD', entry.target.id, entry.user.id, entry.created_at)
 					EMB = action.embed(self.client, action.color)
-					await self.client.get_channel(self.id['TEXTCHANNEL']['LOG']).send(content=None, embed=EMB)
+					await self.log.send(content=None, embed=EMB)
 					return
 			return
 		elif check.is_role(before, self.sdd_role) and not check.is_role(after, self.sdd_role):
