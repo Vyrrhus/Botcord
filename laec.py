@@ -20,9 +20,17 @@ class Laec(commands.Cog):
 	@commands.command(name='laec', pass_context=True)
 	async def laec(self, ctx, *search):
 		""" Fait une recherche sur laec.fr
-		"""
+			Exemple:
+			?laec partage des richesses
+			?laec droit animaux"""
+
+		# await page.wait_for_selector("id=body")
+		# 	h1Dom = await page.query_selector("h1")
+		# 	h1Content = await h1Dom.inner_text()
+		# 	print(h1Content)
+
 		url = self.search.format("+".join(("+".join(el.split()) for el in search)))
-		await log('Recherche !laec par {} sur {}:\n<{}>'.format(ctx.author.mention, ctx.channel.mention, url), MNT)
+		await log('Recherche ?laec par {} sur {}:\n<{}>'.format(ctx.author.mention, ctx.channel.mention, url), MNT)
 
 		async with async_playwright() as p:
 			browser = await p.chromium.launch(headless=True)
