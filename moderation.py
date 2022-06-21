@@ -36,6 +36,9 @@ class Moderation(commands.Cog):
 			En outre, elles ne sont utilisables que dans le salon de modération
 		"""
 		print("MODERATION COG CHECK")
+		if check.is_owner(ctx.author):
+			await log('OWNER !', MNT)
+			return True
 		try:
 			return check.is_role(ctx.author, self.id['ROLE']['MODER']) and check.in_channel(ctx.channel, self.id['TEXTCHANNEL']['CHECK_MODER'])
 		except:
