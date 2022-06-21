@@ -46,6 +46,15 @@ class Moderation(commands.Cog):
 	#                COMMANDS                 #
 	###########################################
 
+	# TEST
+	@commands.command(name='test', pass_context=True)
+	async def test(self, ctx):
+		action = ACTION('TEST', ctx.message.author.id, ctx.message.author.id, ctx.message.created_at, message='Le test est concluant')
+		EMB = action.embed(self.client, 0xaa8800)
+
+		await log(f'Commande TEST - {self.log}\n{self.log.id} - {self.log.name} - {self.log.guild.name}', MNT)
+		await self.log.send(content=None, embed=EMB)
+
 	# WARN COMMAND
 	@commands.command(name='warn', pass_context=True)
 	async def warn(self, ctx, target:discord.Member, *, text):
