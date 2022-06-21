@@ -55,7 +55,7 @@ class Moderation(commands.Cog):
 		action = ACTION('TEST', ctx.message.author.id, ctx.message.author.id, ctx.message.created_at, message='Le test est concluant')
 		EMB = action.embed(self.client, 0xaa8800)
 
-		await log(f'Commande TEST - {self.log}\n{self.log.id} - {self.log.name} - {self.log.guild.name}', MNT)
+		await log(f'Commande TEST - {self.log}\n{self.log.id} - {self.log.name} - {self.log.guild.name}\n{action}', MNT)
 		await self.log.send(content=None, embed=EMB)
 
 	# WARN COMMAND
