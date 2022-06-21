@@ -52,8 +52,12 @@ class Moderation(commands.Cog):
 	# TEST
 	@commands.command(name='test', pass_context=True)
 	async def test(self, ctx):
+		await log(f'COMMANDE TEST 1', MNT)
+		await log(f'args: {ctx.message.author.id}, {ctx.message.created_at}')
 		action = ACTION('TEST', ctx.message.author.id, ctx.message.author.id, ctx.message.created_at, message='Le test est concluant')
+		await log(f'COMMANDE TEST 2', MNT)
 		EMB = action.embed(self.client, 0xaa8800)
+		await log(f'COMMANDE TEST 3', MNT)
 
 		await log(f'Commande TEST - {self.log}\n{self.log.id} - {self.log.name} - {self.log.guild.name}\n{action}', MNT)
 		await self.log.send(content=None, embed=EMB)
