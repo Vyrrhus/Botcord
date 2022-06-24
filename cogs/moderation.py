@@ -153,7 +153,6 @@ class LogView(discord.ui.View):
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.console = Console(self.bot, ConsoleId.moderation)
 
     ###########################
     # COG COMMANDS
@@ -164,6 +163,10 @@ class Moderation(commands.Cog):
     async def cog_command_error(self, ctx, error: Exception) -> None:
         await self.console.print_error(error)
         return await super().cog_command_error(ctx, error)
+    
+    async def bot_check_once(self, ctx) -> bool:
+        self.console = Console(self.bot, ConsoleId.moderation)
+        return super().bot_check_once(ctx)
 
     ###########################
     # COMMANDS

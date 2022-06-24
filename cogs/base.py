@@ -6,7 +6,6 @@ import shutil, os
 class BaseCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.console = Console(self.bot, ConsoleId.serveur)
 
     ###########################
     # COG COMMANDS
@@ -14,6 +13,10 @@ class BaseCommands(commands.Cog):
     async def cog_command_error(self, ctx, error: Exception) -> None:
         await self.console.print_error(error)
         return await super().cog_command_error(ctx, error)
+    
+    async def bot_check_once(self, ctx) -> bool:
+        self.console = Console(self.bot, ConsoleId.serveur)
+        return super().bot_check_once(ctx)
 
     ###########################
     # GENERIC COMMANDS
