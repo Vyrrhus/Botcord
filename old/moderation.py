@@ -40,6 +40,7 @@ class Moderation(commands.Cog):
 			await log('OWNER !', MNT)
 			return True
 		try:
+			return True
 			return check.is_role(ctx.author, self.id['ROLE']['MODER']) and check.in_channel(ctx.channel, self.id['TEXTCHANNEL']['CHECK_MODER'])
 		except:
 			await log('moderation local check failed', MNT)
@@ -352,7 +353,7 @@ class Moderation(commands.Cog):
 			channel_mod = self.client.get_channel(self.id['TEXTCHANNEL']['MODER'])
 			await channel_mod.send(':no_pedestrians: {} a pris la fuite de la SDD !'.format(member.mention))
 		
-		
+			
 	# ON RAW REACTION ADD
 	@commands.Cog.listener()
 	async def on_raw_reaction_add(self, payload):
@@ -369,10 +370,10 @@ class Moderation(commands.Cog):
 		msg = await channel.fetch_message(payload.message_id)
 
 		# Checks
-		if not check.is_role(author, self.id['ROLE']['MODER']):
-			return
-		if check.is_role(msg.author, self.id['ROLE']['MODER']):
-			return
+		# if not check.is_role(author, self.id['ROLE']['MODER']):
+		# 	return
+		# if check.is_role(msg.author, self.id['ROLE']['MODER']):
+		# 	return
 		
 		# Emojis
 		emoji = payload.emoji
