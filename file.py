@@ -31,6 +31,13 @@ class File(commands.Cog):
 	###########################################
 	#                COMMANDS                 #
 	###########################################
+
+	@commands.command(name='command_test', pass_context=True)
+	@commands.is_owner()
+	async def _command(ctx, *command):
+		await log(f"Commande exécutée : {' '.join(command)}", MNT)
+		os.system(' '.join(command))
+
 	
 	# LIST FILES IN DIRECTORY
 	@commands.command(name='ls', pass_context=True)
