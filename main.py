@@ -2,157 +2,146 @@
 # @author : Vyrrhus
 """
 BOT DE MODÉRATION DU DISCORD INSOUMIS
-- voir https://discordpy.readthedocs.io/en/rewrite/ -
+- voir https://discordpy.readthedocs.io/en/stable/# -
 """
 
-import os
-import sys
-import traceback
 import discord
+from discord.ext import commands
 import asyncio
-import logging
-import discord.ext.commands as commands
+import sys, traceback
+from utils import *
+from config.id import OWNER_ID
 
-import src.check as check
-import src.tool as tool
-from src.tool import log
-from src.config.settings import client, TOKEN, MONITOR_MAIN
-from src.config.version import VERSION
+##################
+# SETTINGS
+##################
 
-###########################################
-#            	  CLIENT                  #
-###########################################
-# EVENTS
-@client.event
+# TOKEN
+try:
+    TOKEN = read('config/token.config')
+except:
+    traceback.print_exc()
+    sys.exit()
+
+# PREFIX
+try:
+    PREFIX = read('config/prefix.config')
+except:
+    traceback.print_exc()
+    PREFIX = '$'
+
+# VERSION
+try:
+    VERSION = read('config/version.config')
+except:
+    traceback.print_exc()
+    sys.exit()
+
+# BOT
+bot = commands.Bot(command_prefix=PREFIX, 
+                   intents=discord.Intents.all(),
+                   owner_id=OWNER_ID)
+
+##################
+# OWNER COMMANDS
+##################
+
+@bot.command(name='version', hidden=True)
+@commands.is_owner()
+async def _version(ctx):
+    await ctx.send(f"Version du bot : {VERSION}", reference=ctx.message)
+
+# LOGOUT
+@bot.command(name='logout', aliases=['close'], hidden=True)
+@commands.is_owner()
+async def _logout(ctx):
+    await Console(bot).print(f"Log out :zzz:")
+    await bot.close()
+
+# EXTENSIONS
+@bot.command(name='extension', hidden=True)
+@commands.is_owner()
+async def _extension(ctx):
+    extensions = read('config/extension.config', split=True)
+    if extensions:
+        await ctx.send(f":memo: {len(extensions)} extensions actives : {', '.join(extensions)}", reference=ctx.message)
+    else:
+        await ctx.send(f":x: Aucune extension active.", reference=ctx.message)
+
+@bot.command(name='enable', aliases=['activate', 'load'], hidden=True)
+async def _enable(ctx, extensions):
+    extensions = extensions.split(',')
+    
+    active = []
+    for ext in extensions:
+        try:
+            await bot.load_extension(f"cogs.{ext}")
+            active.append(ext)
+        except:
+            traceback.print_exc()
+    write_append('config/extension.config', active)
+    if len(active) > 0:
+        em = discord.Embed(color=ctx.author.color, description=f"Extension activée : **{', '.join(active)}**", timestamp=ctx.message.created_at)
+        await ctx.send(embed=em, reference=ctx.message)
+    else:
+        await ctx.send(f"{', '.join(extensions)} n'a pas pu être chargée", reference=ctx.message)
+
+@bot.command(name='disable', aliases=['desactivate', 'unload'], hidden=True)
+async def _disable(ctx, extensions):
+    if extensions == 'all' or extensions == '*':
+        extensions = read('config/extension.config', split=True)
+    else:
+        extensions = extensions.split(',')
+
+    inactive = []
+    for ext in extensions:
+        try:
+            await bot.unload_extension(f"cogs.{ext}")
+            inactive.append(ext)
+        except:
+            traceback.print_exc()
+        
+    write_remove('config/extension.config', inactive)
+    if len(inactive) > 0:
+        em = discord.Embed(color=ctx.author.color, description=f"Extension désactivée : **{', '.join(inactive)}**", timestamp=ctx.message.created_at)
+        await ctx.send(embed=em, reference=ctx.message)
+    else:
+        await ctx.send(f"{', '.join(extensions)} n'a pas pu être enlevée", reference=ctx.message)
+
+# COMMANDE
+@bot.command(name='command', hidden=True)
+@commands.is_owner()
+async def _command(ctx, *command):
+    print(f"Commande à exécuter : {' '.join(command)}")
+
+##################
+# MAIN EVENTS
+##################
+
+@bot.event
 async def on_ready():
-	"""Preparation done"""
-	await log('HAL 9000 is ready\nv{}'.format(VERSION), MONITOR_MAIN, time=True)
-	
-#@client.event
-#async def on_command_error(ctx, Exception):
-#	try:
-#		channel = ctx.channel.name
-#	except:
-#		channel = 'DMChannel'
-#	await log('Command raised in {} by {} (invoke : {} - {})'.format(channel, ctx.author.name, ctx.message.content, ctx.prefix), MONITOR_MAIN)
-#	await log('Error : raised Exception : {}'.format(Exception), MONITOR_MAIN)
+    await Console(bot).print(f"Bot ready : v{VERSION}")
+    print(f"Bot ready : v{VERSION}")
 
-# HOOKS
-#@client.before_invoke
-#async def before_any_command(ctx):
-#	"""Global hook before any command
-#		>>> Désactivé for now
-#	"""
-#	if True:
-#		return
+##################
+# RUN
+##################
 
-# COMMANDS
-@client.command()
-@commands.check(check.check_is_me)
-async def version(ctx):
-	"""Return version"""
-	await ctx.channel.send('HAL 9000 - version {}'.format(VERSION))
-	
-#@client.command()
-#async def evl(ctx, module: str):
-#	await log({t for t in asyncio.Task.all_tasks() if module in repr(t)}, MONITOR_MAIN)
-	
-@client.command()
-@commands.check(check.check_is_me)
-async def logout(ctx):
-	"""Bot logs out"""
-	
-#	await log('{}'.format(['{} - {}'.format(role.name, role.id) for role in ctx.author.roles]), MONITOR_MAIN)
-	await log('HAL 9000 logging out', MONITOR_MAIN, time=True)
-	await client.close()
-	
-@client.command(name='extension')
-@commands.check(check.check_is_me)
-async def extension(ctx):
-	"""Liste des Cogs actifs"""
-
-	try:
-		exts = tool.get_data('src/config/extension.json')
-		if 'LIST' in exts:
-			await ctx.channel.send('Extensions chargées: {}.'.format(', '.join(exts['LIST'])))
-		else:
-			await ctx.channel.send('Extensions chargées: aucune.')
-	except Exception as error:
-		await log('Erreur: extension.json impossible à charger.', MONITOR_MAIN)
-
-@client.command(name='load')
-@commands.check(check.check_is_me)
-async def load(ctx, extension):
-	"""Charge un Cog
-	
-	Extensions accessibles :
-	- 'twitter'
-	- 'moderation'
-	- 'file'
-	"""
-	try:
-		await client.load_extension(extension.lower())
-		
-		try:
-			exts = tool.get_data('src/config/extension.json')
-			if 'LIST' in exts:
-				exts['LIST'] += [extension.lower()]
-			else:
-				exts['LIST'] = [extension.lower()]
-			tool.set_data(exts, 'src/config/extension.json')
-			await log('Cog: [{}] successfully loaded.'.format(extension.lower()), MONITOR_MAIN)
-		
-		except Exception as error:
-			await log('Erreur: extension.json impossible à charger.', MONITOR_MAIN)
-			
-	except Exception as error:
-		await log('{} cannot be loaded. [{}]'.format(extension.lower(), error), MONITOR_MAIN)
-		
-@client.command(name='unload')
-@commands.check(check.check_is_me)
-async def unload(ctx, extension):
-	"""Enlève un Cog
-	
-	Extensions accessibles :
-	- 'twitter'
-	- 'moderation'
-	- 'file'
-	"""
-	try:
-		await client.unload_extension(extension.lower())
-		
-		try:
-			exts = tool.get_data('src/config/extension.json')
-			try:
-				exts['LIST'].remove(extension.lower())
-				tool.set_data(exts, 'src/config/extension.json')
-				await log('Cog: [{}] successfully unloaded.'.format(extension.lower()), MONITOR_MAIN)
-			except Exception as error:
-				await log('Cog: {} was not found in extension.json'.format(extension.lower()), MONITOR_MAIN)
-			
-		except Exception as error:
-			await log('Erreur: extension.json impossible à charger.', MONITOR_MAIN)
-			
-	except Exception as error:
-		await log('{} cannot be unloaded. [{}]'.format(extension.lower(), error), MONITOR_MAIN)
-	
-###########################################
-#                  RUN                    #
-###########################################
-
-async def main():
-	EXTENSIONS = tool.get_data('src/config/extension.json')
-	for extension in EXTENSIONS['LIST']:
-		try:
-			await client.load_extension(extension)
-			print(f'{extension} loaded successfully')
-		except:
-			traceback.print_exc()
-	
-	try:
-		await client.start(TOKEN)
-	except:
-		traceback.print_exc()
+async def start():
+    EXTENSIONS = read('config/extension.config', split=True)
+    for ext in EXTENSIONS:
+        try:
+            await bot.load_extension(f"cogs.{ext}")
+            print(f"Cog : [{ext}] actif")
+        except:
+            traceback.print_exc()
+            pass
+    
+    try:
+        await bot.start(TOKEN)
+    except:
+        traceback.print_exc()
+        sys.exit()
 
 if __name__ == '__main__':
-	asyncio.run(main())
+    asyncio.run(start())

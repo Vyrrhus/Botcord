@@ -1,9 +1,9 @@
 # Data files
 
 *.json
-*.txt
 *.pyc
 *.log
-cog.py
+*.config
+*.dat
 
 !requirements.txt
