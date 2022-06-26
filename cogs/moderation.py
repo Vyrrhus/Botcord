@@ -81,8 +81,7 @@ class LogView(discord.ui.View):
         
         self.emDict = {"title": f"{target.display_name} ({str(target)})",
                        "type": "rich",
-                       "color": 0x1db868,
-                       "timestamp": discord.utils.utcnow().isoformat()}
+                       "color": 0x1db868}
         
         # Ajouter un bouton pour clear et un select pour choisir entre les types de logs
         self.add_item(LogButton(-1))
@@ -109,6 +108,7 @@ class LogView(discord.ui.View):
         # Ajouter : time-out durée restante si applicable
         log = self.logs.iloc[[self.num - 1]].replace({np.nan:None}).to_dict(orient='list')
         log = {key: log[key][0] for key in log}
+        self.emDict["timestamp"] = log['time']
         self.emDict["fields"] = [{"name": "Motif :", "value": log['type'], "inline": True}]
 
         moderateur = self.bot.get_user(log['moderateur'])
