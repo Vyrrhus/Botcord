@@ -11,7 +11,7 @@ class BaseCommands(commands.Cog):
     # COG COMMANDS
 
     async def cog_command_error(self, ctx, error: Exception) -> None:
-        await self.console.print_error(error)
+        await self.console.print_error(ctx, error)
         return await super().cog_command_error(ctx, error)
     
     async def bot_check_once(self, ctx) -> bool:
