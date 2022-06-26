@@ -1,13 +1,16 @@
 import discord
 from discord.ext import commands
 from check import check_category
-from utils import Data, Console
+from utils import Console
 from config.id import RolesId, ChannelId, ConsoleId
 import traceback
 import asyncio
 import numpy as np
+import pandas as pd
 
 # commande ?sram pour avoir un classement des meilleurs modérateurs
+
+# UI & VIEW
 class LogButton(discord.ui.Button):
     def __init__(self,id):
         if id < 0:
@@ -150,6 +153,107 @@ class LogView(discord.ui.View):
         self.stop()
         return await super().on_timeout()
 
+# STRUCTURES
+class Data:
+    path = 'data/moderation.dat'
+
+    def __init__(self, title, target, author, time, reason='', dm='', message=None):
+        self.path    = Data.path
+        self.type    = title.upper()
+        self.target  = target
+        self.author  = author
+        self.time    = time
+        self.reason  = reason
+        self.dm      = dm
+        self.message = message
+    
+    @staticmethod
+    def get_logs(user):
+        df = pd.read_csv(Data.path)
+        df = df[df['user'] == user.id]
+        return df
+
+    @staticmethod
+    def get_moderateur(user):
+        df = pd.read_csv(Data.path)
+        df = df[df['moderateur'] == user.id]
+        return df
+
+    @staticmethod
+    def remove_index(index):
+        df = pd.read_csv(Data.path)
+        df = df.drop(index)
+        df.to_csv(Data.path, index=False)
+
+    def embed(self, isLog=False, isSanction=False):
+        emDict = {"type": "rich",
+                  "thumbnail": {"url": "https://cdn3.emoji.gg/emojis/9299-blurple-ban.png"},
+                  "timestamp": self.time.isoformat(),
+                  "fields": [{"name": "Utilisateur",
+                              "value": self.target.mention,
+                              "inline": True},
+                              {"name": "Modérateur",
+                              "value": self.author.mention,
+                              "inline": True}]}
+        
+        # Modération d'un message
+        if isLog and self.message:
+            emDict["color"] = 0x0153f7
+            emDict["fields"].append({"name": "Salon", "value": f"<#{self.message.channel.id}>"})
+            emDict["fields"].append({"name": "Message", "value": self.message.content})
+        
+        if isSanction:
+            emDict["color"] = 0xfe0000
+            if self.reason:
+                emDict["fields"].append({"name": "Raison", "value": self.reason})
+            if self.dm:
+                emDict["fields"].append({"name": "Message en DM", "value": self.dm})
+            if self.target.timed_out_until and self.type == "TIMEOUT":
+                timedelta = self.target.timed_out_until - self.time
+                days  = timedelta.days
+                hours = (timedelta.seconds // 3600) % 24
+                mins  = (timedelta.seconds // 60) % 60
+                secs  = timedelta.seconds % 60
+                if days > 1:
+                    delay = "7j"
+                elif hours > 1:
+                    delay = "1j"
+                elif mins > 10:
+                    delay = "1h"
+                elif mins > 5:
+                    delay = "10mn"
+                elif mins > 1:
+                    delay = "5mn"
+                else:
+                    delay = "1mn"
+                
+                self.type += f' - {delay}'
+        
+        emDict["title"] = f"[{self.type}] - {self.target.display_name} ({str(self.target)})"
+        em = discord.Embed.from_dict(emDict)
+
+        return em
+
+    def already_log(self):
+        df = pd.read_csv(self.path)
+        if self.message:
+            df = df[df['id'] == self.message.id]
+            if df.shape[0] > 0:
+                return True
+        return False
+
+    def to_dataframe(self):
+        df = pd.read_csv(self.path)
+        if self.message:
+            id = self.message.id
+            channel_id = self.message.channel.id
+        else:
+            id, channel_id, content = None, None, ''
+        
+        df.loc[len(df)] = [self.type, self.target.id, self.author.id, self.time.isoformat(), self.reason.replace('\n', '\\n'), self.dm.replace('\n', '\\n'), id, channel_id, content.replace('\n', '\\n')]
+        df.to_csv(self.path, index=False)
+
+# COG CLASS
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
