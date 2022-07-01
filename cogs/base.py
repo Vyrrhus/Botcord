@@ -1,3 +1,4 @@
+from discord import File
 from discord.ext import commands
 from utils import Console
 from config.id import ConsoleId
@@ -82,6 +83,26 @@ class BaseCommands(commands.Cog):
                 path = '.'
             dir, file = self.ls(path=path)
             await ctx.send("path: `{}`\n```{}```".format(path, '\n'.join(dir+['======= file =======']+file)))
+        
+        if 'dl' in args:
+            try:
+                path = args[args.index('dl')+1]
+                await ctx.channel.send("Fichier : ", file=File(f'{path}'))
+            except:
+                await ctx.channel.send(f"Pas de fichier téléchargeable : `{path}`")
+        
+        if 'ul' in args:
+            path  = args[args.index('ul')+1]
+            files = ctx.message.attachments
+            if len(files) == 1:
+                file = files[0]
+                try:
+                    file.save(path)
+                    await ctx.channel.send(f"Fichier `{file.filename}` chargé dans `{path}`")
+                except:
+                    await ctx.channel.send(f"Fichier `{file.filename}` non chargé.")
+            else:
+                await ctx.channel.send(f"On ne peut charger qu'un fichier à la fois :\n{'\n'.join([el.filename for el in files])}")
 
 async def setup(bot):
     await bot.add_cog(BaseCommands(bot))
