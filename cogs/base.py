@@ -102,7 +102,7 @@ class BaseCommands(commands.Cog):
                 except:
                     await ctx.channel.send(f"Fichier `{file.filename}` non chargé.")
             else:
-                await ctx.channel.send(f"On ne peut charger qu'un fichier à la fois :\n{'\n'.join([el.filename for el in files])}")
+                await ctx.channel.send(f"On ne peut charger qu'un fichier à la fois :\n{', '.join([el.filename for el in files])}")
 
 async def setup(bot):
     await bot.add_cog(BaseCommands(bot))
