@@ -79,9 +79,11 @@ class LogView(discord.ui.View):
         self.num    = 1
         self.timeout = timeout
         
-        self.emDict = {"title": f"{target.display_name} ({str(target)})",
-                       "type": "rich",
-                       "color": 0x1db868}
+        self.emDict =   {"type": "rich",
+                         "author": {"name": f"{str(self.target)}",
+                                    "icon_url": self.target.avatar.url},
+                         "color": 0x1db868,
+                         "footer": {"text": f"ID : {self.target.id}"}}
         
         # Ajouter un bouton pour clear et un select pour choisir entre les types de logs
         self.add_item(LogButton(-1))
@@ -104,21 +106,26 @@ class LogView(discord.ui.View):
         return
     
     def get_log(self):
-        # Ajouter : timestamp (str to datetime.isoformat())
-        # Ajouter : time-out durée restante si applicable
         log = self.logs.iloc[[self.num - 1]].replace({np.nan:None}).to_dict(orient='list')
         log = {key: log[key][0] for key in log}
-        self.emDict["timestamp"] = log['time']
-        self.emDict["fields"] = [{"name": "Motif :", "value": log['type'], "inline": True}]
+
+        self.emDict["timestamp"] = log["time"]
+        self.emDict["title"] = log["type"]
+        self.emDict["fields"] = []
 
         moderateur = self.bot.get_user(log['moderateur'])
         if isinstance(moderateur, discord.User):
-            self.emDict["fields"].append({"name": "Modérateur", "value": f"{self.bot.get_user(log['moderateur']).mention}"})
+            self.emDict["fields"].append({"name": "Modérateur", "value": f"{moderateur.mention}", "inline": True})
+        
+        if log['channel_id'] and log['contenu']:
+            self.emDict["fields"].append({"name": "Salon", "value": f"<#{log['channel_id']}>", "inline": True})
+            self.emDict["fields"].append({"name": "Message", "value": log['contenu']})
+        
         if log['raison']:
             self.emDict["fields"].append({"name": "Raison", "value": log['raison']})
-        if log['channel_id'] and log['contenu']:
-            self.emDict["fields"].append({"name": "Salon", "value": f"Dans <#{log['channel_id']}>"})
-            self.emDict["fields"].append({"name": "Message", "value": log["contenu"]})
+        
+        if log['message']:
+            self.emDict["fields"].append({"name": "Message en DM", "value": log['message']})
 
     def update(self):
         # Update buttons
@@ -157,7 +164,7 @@ class LogView(discord.ui.View):
 class Data:
     path = 'data/moderation.dat'
 
-    def __init__(self, title, target, author, time, reason='', dm='', message=None):
+    def __init__(self, title, target, author, time, reason='', dm='', message=''):
         self.path    = Data.path
         self.type    = title.upper()
         self.target  = target
@@ -187,19 +194,21 @@ class Data:
 
     def embed(self, isLog=False, isSanction=False):
         emDict = {"type": "rich",
-                  "thumbnail": {"url": "https://cdn3.emoji.gg/emojis/9299-blurple-ban.png"},
+                  "author": {"name": f"{self.type} | {str(self.target)}", 
+                             "icon_url": self.target.avatar.url},
                   "timestamp": self.time.isoformat(),
                   "fields": [{"name": "Utilisateur",
                               "value": self.target.mention,
                               "inline": True},
                               {"name": "Modérateur",
                               "value": self.author.mention,
-                              "inline": True}]}
+                              "inline": True}],
+                   "footer": {"text": f"ID : {self.target.id}"}}
         
         # Modération d'un message
         if isLog and self.message:
             emDict["color"] = 0x0153f7
-            emDict["fields"].append({"name": "Salon", "value": f"<#{self.message.channel.id}>"})
+            emDict["fields"].append({"name": "Salon", "value": f"<#{self.message.channel.id}>", "inline": True})
             emDict["fields"].append({"name": "Message", "value": self.message.content})
         
         if isSanction:
@@ -228,8 +237,8 @@ class Data:
                     delay = "1mn"
                 
                 self.type += f' - {delay}'
-        
-        emDict["title"] = f"[{self.type}] - {self.target.display_name} ({str(self.target)})"
+                emDict["author"]["name"] = f"{self.type} | {str(self.target)}"
+
         em = discord.Embed.from_dict(emDict)
 
         return em
@@ -245,8 +254,9 @@ class Data:
     def to_dataframe(self):
         df = pd.read_csv(self.path)
         if self.message:
-            id = self.message.id
+            id         = self.message.id
             channel_id = self.message.channel.id
+            content    = self.message.content
         else:
             id, channel_id, content = None, None, ''
         
@@ -288,7 +298,7 @@ class Moderation(commands.Cog):
     @commands.command(name='log', pass_context=True)
     @commands.has_guild_permissions(kick_members=True)
     @check_category(ChannelId.category_moderation)
-    async def _log(self, ctx, target:discord.Member):
+    async def _log(self, ctx, target:discord.User):
         try:
 
             user_logs = Data.get_logs(target)
