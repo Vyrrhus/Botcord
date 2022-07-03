@@ -287,7 +287,7 @@ class Moderation(commands.Cog):
     # COMMANDS
 
     # LIBRE
-    @commands.command(name='libre', pass_context=True)
+    @commands.command(name='libre')
     @commands.has_guild_permissions(kick_members=True)
     @check_category(ChannelId.category_moderation)
     async def _libre(self, ctx):
@@ -295,7 +295,7 @@ class Moderation(commands.Cog):
         await ctx.send('```LIBRE```')
 
     # LOG VIEW : SEE AND CLEAR LOGS
-    @commands.command(name='log', pass_context=True)
+    @commands.command(name='log')
     @commands.has_guild_permissions(kick_members=True)
     @check_category(ChannelId.category_moderation)
     async def _log(self, ctx, target:discord.User):
@@ -315,7 +315,7 @@ class Moderation(commands.Cog):
             traceback.print_exc()
 
     # SRAM : classement
-    @commands.command(name='sram', pass_context=True, hidden=True)
+    @commands.command(name='sram', hidden=True)
     @commands.has_guild_permissions(kick_members=True)
     @check_category(ChannelId.category_moderation)
     async def _classement(self, ctx):

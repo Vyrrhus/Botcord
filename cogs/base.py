@@ -51,7 +51,7 @@ class BaseCommands(commands.Cog):
     # BOT COMMANDS
 
     # COMMAND
-    @commands.command(name='__', pass_context=True)
+    @commands.command(name='__')
     @commands.is_owner()
     async def _command(self, ctx, *args):
         if 'rm' in args:
