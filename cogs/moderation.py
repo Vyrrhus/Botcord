@@ -357,7 +357,7 @@ class Moderation(commands.Cog):
         user_logs = Data.get_logs(member)
         if user_logs.shape[0] > 0:
             channel = member.guild.get_channel(ChannelId.channel_moderation)
-            await channel.send(f':star: {str(member)} a rejoint le serveur avec {user_logs.shape[0]} logs')
+            await channel.send(embed=discord.Embed(description=f':star: {str(member)} a rejoint le serveur avec {user_logs.shape[0]} logs'))
 
     # EMOJI REACTIONS
     @commands.Cog.listener()
@@ -467,7 +467,7 @@ class Moderation(commands.Cog):
 
             # FIN TIMEOUT
             if not after.is_timed_out() and before.is_timed_out():
-                await after.guild.get_channel(ChannelId.channel_moderation).send(content=f':alarm_clock: {after.mention} a terminé son time-out !')
+                await after.guild.get_channel(ChannelId.channel_moderation).send(embed=discord.Embed(description=f':alarm_clock: {after.mention} a terminé son time-out !'))
 
             # AJOUT ROLES
             roles_after  = [item for item in after.roles if item not in before.roles]
