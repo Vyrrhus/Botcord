@@ -16,7 +16,7 @@ class ConsoleId:
     default     = 521102722464874517
     moderation  = 521102754467282954
     serveur     = 989876459474677830
-    twitter     = 521102793419784202class GuildId:
+    twitter     = 521102793419784202
 
 class GuildId:
     default     = 254215611264008192
