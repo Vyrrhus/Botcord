@@ -1,3 +1,5 @@
+import discord
+import typing
 from discord import File
 from discord.ext import commands
 from utils import Console
@@ -103,6 +105,46 @@ class BaseCommands(commands.Cog):
                     await ctx.channel.send(f"Fichier `{file.filename}` non chargé.")
             else:
                 await ctx.channel.send(f"On ne peut charger qu'un fichier à la fois :\n{', '.join([el.filename for el in files])}")
+
+    @commands.command(name='sync')
+    @commands.guild_only()
+    @commands.is_owner()
+    async def _sync(self, ctx, guilds: commands.Greedy[discord.Object], spec: typing.Optional[typing.Literal["~", "*", "^"]] = None) -> None:
+        """
+        ?sync -> global sync
+        ?sync ~ -> sync current guild
+        ?sync * -> copies all global app commands to current guild and syncs
+        ?sync ^ -> clears all commands from the current guild target and syncs (removes guild commands)
+        ?sync id_1 id_2 -> syncs guilds with id 1 and 2
+        """
+        if not guilds:
+            if spec == "~":
+                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            elif spec == "*":
+                ctx.bot.tree.copy_global_to(guild=ctx.guild)
+                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            elif spec == "^":
+                ctx.bot.tree.clear_commands(guild=ctx.guild)
+                await ctx.bot.tree.sync(guild=ctx.guild)
+                synced = []
+            else:
+                synced = await ctx.bot.tree.sync()
+
+            await ctx.send(
+                f"{len(synced)} commandes synchronisées {'globalement' if spec is None else 'sur ce serveur.'}"
+            )
+            return
+
+        ret = 0
+        for guild in guilds:
+            try:
+                await ctx.bot.tree.sync(guild=guild)
+            except discord.HTTPException:
+                pass
+            else:
+                ret += 1
+
+        await ctx.send(f"{ret}/{len(guilds)} ont leurs commandes synchronisées")
 
 async def setup(bot):
     await bot.add_cog(BaseCommands(bot))
