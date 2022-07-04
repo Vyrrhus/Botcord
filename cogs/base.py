@@ -99,7 +99,7 @@ class BaseCommands(commands.Cog):
             if len(files) == 1:
                 file = files[0]
                 try:
-                    file.save(path)
+                    await file.save(path)
                     await ctx.channel.send(f"Fichier `{file.filename}` chargé dans `{path}`")
                 except:
                     await ctx.channel.send(f"Fichier `{file.filename}` non chargé.")
