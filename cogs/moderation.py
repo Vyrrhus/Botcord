@@ -421,7 +421,6 @@ class Moderation(commands.Cog):
         # Check the last entry only
         entry = entries[0]
         if entry.action == discord.AuditLogAction.kick:
-            # NOT VERIFIED YET
             log = Data(f"KICK", member, entry.user, entry.created_at, reason=entry.reason)
             em  = log.embed(isSanction=True)
             try:
@@ -431,14 +430,14 @@ class Moderation(commands.Cog):
             log.to_dataframe()
 
         if entry.action == discord.AuditLogAction.ban:
-            # NOT VERIFIED YET
             log = Data(f"BAN", member, entry.user, entry.created_at, reason=entry.reason)
             em  = log.embed(isSanction=True)
             try:
                 await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
             except:
                 traceback.print_exc()
-            log.to_dataframe()        
+            log.to_dataframe()
+            await guild.get_channel(ChannelId.channel_moderation).send(content=None, embed=discord.Embed(color=0x6eaa5e, description=f":hammer: {str(member)} a été ban par {str(entry.user)}"))   
 
     # TIMEOUT & ROLE EDIT
     @commands.Cog.listener()
