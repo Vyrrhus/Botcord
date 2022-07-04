@@ -1,8 +1,9 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 from check import check_category
 from utils import Console
-from config.id import RolesId, ChannelId, ConsoleId
+from config.id import *
 import traceback
 import asyncio
 import numpy as np
@@ -293,6 +294,31 @@ class Moderation(commands.Cog):
     async def _libre(self, ctx):
         await ctx.message.delete()
         await ctx.send('```LIBRE```')
+
+    # WARN
+    @commands.hybrid_command(name='warn', brief='Envoie un avertissement en privé à la personne ciblée')
+    @app_commands.guilds(discord.Object(GuildId.default))
+    @app_commands.describe(cible="La personne à avertir", message="contenu de l'avertissement envoyé en DM")
+    @commands.has_guild_permissions(kick_members=True)
+    @check_category(ChannelId.category_moderation)
+    async def _warn(self, ctx: commands.Context, cible: discord.Member, *, message: str):
+        if ctx.author.roles[-1] <= cible.roles[-1]:
+            await ctx.send(content=None, embed=discord.Embed(description=f"Impossible d'envoyer un avertissement à quelqu'un ayant un rôle supérieur ou égal au sien.", color=0xfe0000))
+            return
+
+        # Send warn
+        dm_channel = await cible.create_dm()
+        em = discord.Embed(description=f"Tu as reçu un avertissement de **{ctx.guild.name}** : \n{message}", color=0xfe0000)
+        await dm_channel.send(content=None, embed=em)
+
+        # Log warn
+        log = Data(f"Warn", cible, ctx.author, ctx.message.created_at, dm=message)
+        em  = log.embed(isSanction=True)
+        await ctx.guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
+        log.to_dataframe()
+
+        # Answer
+        await ctx.send(content=None, embed=discord.Embed(color=0x6eaa5e, description=f"{str(cible)} a reçu un avertissement."))
 
     # LOG VIEW : SEE AND CLEAR LOGS
     @commands.command(name='log')
