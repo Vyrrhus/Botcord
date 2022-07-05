@@ -510,7 +510,10 @@ class Moderation(commands.Cog):
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         if after.mute and not before.mute:
             channel = member.guild.get_channel(ChannelId.channel_moderation)
-            await channel.send(embed=discord.Embed(description=f':mute: {str(member)} a été mute dans {after.channel.mention}'))
+            await channel.send(embed=discord.Embed(description=f':mute: {str(member)} a été mute dans {after.channel.mention}', color=0xfe0000))
+        if before.mute and not after.mute:
+            channel = member.guild.get_channel(ChannelId.channel_moderation)
+            await channel.send(embed=discord.Embed(description=f":loud_sound: {str(member)} n'est plus mute !", color=0x6eaa5e))
             
 
 async def setup(bot):
