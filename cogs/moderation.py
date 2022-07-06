@@ -379,11 +379,11 @@ class Moderation(commands.Cog):
         return app_commands.check(predicate)
 
     # BAN TEMP
-    @app_commands.command(name='ban', description="Ban temporairement un membre du serveur")
+    @app_commands.command(name='bantemp', description="Ban temporairement un membre du serveur")
     @app_commands.guilds(discord.Object(GuildId.default))
     @app_commands.describe(cible="La personne à ban", duree="Durée du ban temporaire")
     @check_ban_command()
-    async def _ban(self, interaction: discord.Interaction, cible: discord.Member, duree: typing.Literal['1 mois', '3 mois', '6 mois', '12 mois']):
+    async def _bantemp(self, interaction: discord.Interaction, cible: discord.Member, duree: typing.Literal['1 mois', '3 mois', '6 mois', '12 mois']):
         if interaction.user.roles[-1] <= cible.roles[-1]:
             await interaction.response.send_message(embed=discord.Embed(description=f"Impossible de bannir quelqu'un ayant un rôle supérieur ou égal au sien.", color=0xfe0000))
             return
