@@ -384,19 +384,22 @@ class Moderation(commands.Cog):
     @app_commands.describe(cible="La personne à ban", duree="Durée du ban temporaire")
     @check_ban_command()
     async def _bantemp(self, interaction: discord.Interaction, cible: discord.Member, duree: typing.Literal['1 mois', '3 mois', '6 mois', '12 mois']):
-        if interaction.user.roles[-1] <= cible.roles[-1]:
-            await interaction.response.send_message(embed=discord.Embed(description=f"Impossible de bannir quelqu'un ayant un rôle supérieur ou égal au sien.", color=0xfe0000))
-            return
+        try:
+            if interaction.user.roles[-1] <= cible.roles[-1]:
+                await interaction.response.send_message(embed=discord.Embed(description=f"Impossible de bannir quelqu'un ayant un rôle supérieur ou égal au sien.", color=0xfe0000))
+                return
+            
+            # Modal
+            modal = BanModal()
+            modal.title   = f"Ban {str(cible)} ({duree})"
+            modal.bot     = self.bot
+            modal.console = self.console
+            modal.target  = cible
+            modal.duree   = duree
         
-        # Modal
-        modal = BanModal()
-        modal.title   = f"Ban {str(cible)} ({duree})"
-        modal.bot     = self.bot
-        modal.console = self.console
-        modal.target  = cible
-        modal.duree   = duree
-    
-        await interaction.response.send_modal(modal)
+            await interaction.response.send_modal(modal)
+        except:
+            self.console.print_error(interaction, traceback.print_exc())
 
     ###########################
     # COMMANDS
