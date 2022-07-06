@@ -196,7 +196,7 @@ class BanModal(discord.ui.Modal, title=''):
     def store_data(self):
         # Datetime for unban
         delay = int(self.duree[0])   # Months
-        unban = datetime.today() + timedelta(seconds=delay*30)
+        unban = datetime.today() + timedelta(days=delay*30)
 
         df = pd.read_csv(self.path)
         df.loc[len(df)] = [self.target.id, unban.isoformat()]
