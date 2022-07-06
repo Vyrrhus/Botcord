@@ -8,6 +8,8 @@ import traceback
 import asyncio
 import numpy as np
 import pandas as pd
+import typing
+from datetime import datetime, timedelta
 
 # commande ?sram pour avoir un classement des meilleurs modérateurs
 
@@ -161,6 +163,75 @@ class LogView(discord.ui.View):
         self.stop()
         return await super().on_timeout()
 
+class BanModal(discord.ui.Modal, title=''):
+    path = "data/bantemp.dat"
+    reason  = discord.ui.TextInput(
+            label='Raison',
+            style=discord.TextStyle.long,
+            placeholder='Ban parce que...')
+    message = discord.ui.TextInput(
+            label='Message envoyé en DM (optionnel)',
+            style=discord.TextStyle.long,
+            required=False)
+    
+    @staticmethod
+    def clear(user_id):
+        df = pd.read_csv(BanModal.path)
+        index = df.set_index('user').index.get_loc(user_id)
+        df = df.drop(index)
+        df.to_csv(BanModal.path, index=False)
+
+    @staticmethod
+    async def unban_task(time, target_id, guild, target=None, bot=None):
+        if time > datetime.today():
+            print(f'sleeping til {time.isoformat()}')
+            await discord.utils.sleep_until(time)
+        BanModal.clear(target_id)
+        if not target and bot:
+            target = await bot.fetch_user(target_id)
+        if target:
+            await guild.unban(target, reason=f"Fin du ban temporaire")
+            await guild.get_channel(ChannelId.channel_moderation).send(embed=discord.Embed(color=0x6eaa5e, description=f"{str(target)} a été unban."))
+
+    def store_data(self):
+        # Datetime for unban
+        delay = int(self.duree[0])   # Months
+        unban = datetime.today() + timedelta(seconds=delay*30)
+
+        df = pd.read_csv(self.path)
+        df.loc[len(df)] = [self.target.id, unban.isoformat()]
+        df.to_csv(self.path, index=False)
+
+        return unban
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # Send DM
+        dm_channel = await self.target.create_dm()
+        em = discord.Embed(
+                    title=f"Tu as été banni de : {interaction.guild.name} pour une durée de {self.duree}.",
+                    description=self.message.value,
+                    color=0xfe0000)
+        await dm_channel.send(embed=em)
+        
+        # Ban
+        await self.target.ban(delete_message_days=0, reason=self.reason.value)
+        
+        # Log
+        unban_datetime = self.store_data()
+        log = Data(f"Ban temporaire {self.duree}", self.target, interaction.user, interaction.created_at, reason=self.reason.value, dm=self.message.value)
+        em  = log.embed(isSanction=True)
+        await interaction.guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
+        log.to_dataframe()
+
+        # Response
+        await interaction.response.send_message(embed=discord.Embed(color=0x6eaa5e, description=f":hammer: {str(self.target)} a été banni du serveur pour une durée de {self.duree}"))
+
+        # Task for unban
+        await BanModal.unban_task(unban_datetime, self.target.id, interaction.guild, target=self.target)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+        await self.console.print_error(interaction, error)
+
 # STRUCTURES
 class Data:
     path = 'data/moderation.dat'
@@ -268,6 +339,17 @@ class Data:
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        asyncio.get_event_loop().create_task(self.init_unban_task())
+
+    async def init_unban_task(self):
+        df = pd.read_csv(BanModal.path)
+        await self.bot.wait_until_ready()
+        self.console = Console(self.bot, ConsoleId.moderation)
+        guild = self.bot.get_guild(GuildId.default)
+        for ii in range(df.shape[0]):
+            df_ban = df.iloc[ii]
+            time   = datetime.fromisoformat(df_ban['time'])
+            await BanModal.unban_task(time, df_ban['user'], guild, bot=self.bot)
 
     ###########################
     # COG COMMANDS
@@ -283,6 +365,38 @@ class Moderation(commands.Cog):
     async def bot_check_once(self, ctx) -> bool:
         self.console = Console(self.bot, ConsoleId.moderation)
         return super().bot_check_once(ctx)
+
+    ###########################
+    # SLASH COMMANDS
+
+    # Check
+    def check_ban_command():
+        def predicate(interaction: discord.Interaction) -> bool:
+            if interaction.channel.category.id == ChannelId.category_moderation:
+                return interaction.user.guild_permissions.ban_members and interaction.guild.me.guild_permissions.ban_members
+            else:
+                return False
+        return app_commands.check(predicate)
+
+    # BAN TEMP
+    @app_commands.command(name='ban', description="Ban temporairement un membre du serveur")
+    @app_commands.guilds(discord.Object(GuildId.default))
+    @app_commands.describe(cible="La personne à ban", duree="Durée du ban temporaire")
+    @check_ban_command()
+    async def _ban(self, interaction: discord.Interaction, cible: discord.Member, duree: typing.Literal['1 mois', '3 mois', '6 mois', '12 mois']):
+        if interaction.user.roles[-1] <= cible.roles[-1]:
+            await interaction.response.send_message(embed=discord.Embed(description=f"Impossible de bannir quelqu'un ayant un rôle supérieur ou égal au sien.", color=0xfe0000))
+            return
+        
+        # Modal
+        modal = BanModal()
+        modal.title   = f"Ban {str(cible)} ({duree})"
+        modal.bot     = self.bot
+        modal.console = self.console
+        modal.target  = cible
+        modal.duree   = duree
+    
+        await interaction.response.send_modal(modal)
 
     ###########################
     # COMMANDS
@@ -409,11 +523,11 @@ class Moderation(commands.Cog):
     # KICKS & BANS
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        if not self.bot.get_guild(member.guild.id).me.guild_permissions.view_audit_log:
+        if not member.guild.me.guild_permissions.view_audit_log:
             return
 
         await asyncio.sleep(5)
-        guild = self.bot.get_guild(member.guild.id)
+        guild = member.guild
         entries = [entry async for entry in guild.audit_logs(limit=20) if entry.action in (discord.AuditLogAction.kick, discord.AuditLogAction.ban) and entry.target.id == member.id]
         if len(entries) == 0:
             return
@@ -431,6 +545,8 @@ class Moderation(commands.Cog):
 
         if entry.action == discord.AuditLogAction.ban:
             log = Data(f"BAN", member, entry.user, entry.created_at, reason=entry.reason)
+            if entry.user == member.guild.me:
+                return
             em  = log.embed(isSanction=True)
             try:
                 await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
@@ -515,6 +631,5 @@ class Moderation(commands.Cog):
             channel = member.guild.get_channel(ChannelId.channel_moderation)
             await channel.send(embed=discord.Embed(description=f":loud_sound: {str(member)} n'est plus mute !", color=0x6eaa5e))
             
-
 async def setup(bot):
     await bot.add_cog(Moderation(bot))
