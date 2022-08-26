@@ -455,7 +455,7 @@ class Moderation(commands.Cog):
             view.message = await ctx.send(f"{user_logs.shape[0]} logs trouvés pour {str(target)}", embed=None, view=view)
         
         except:
-            traceback.print_exc()
+            await self.console.print_error(ctx, traceback.print_exc())
 
     # SRAM : classement
     @commands.command(name='sram', hidden=True)
@@ -492,6 +492,8 @@ class Moderation(commands.Cog):
                     if not isinstance(message.author, discord.User):
                         if message.author.guild_permissions.kick_members:
                             return
+                    
+                    await self.console.print(f"Log :eyes: de {message.author.display_name} dans #{channel.name} par {payload.member.display_name}")
                     await message.remove_reaction(payload.emoji, payload.member)
 
                     log = Data(f"LOG {payload.emoji}", message.author, payload.member, message.created_at, message=message)
@@ -501,7 +503,8 @@ class Moderation(commands.Cog):
                     try:
                         await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
                     except:
-                        traceback.print_exc()
+                        await self.console.print_error(None, traceback.print_exc())
+                        # traceback.print_exc()
                     log.to_dataframe()
 
                 # DELETE
@@ -511,6 +514,8 @@ class Moderation(commands.Cog):
                     if not isinstance(message.author, discord.User):
                         if message.author.guild_permissions.kick_members:
                             return
+
+                    await self.console.print(f"Log :x: de {message.author.display_name} dans #{channel.name} par {payload.member.display_name}")
                     await message.delete()
 
                     log = Data(f"LOG {payload.emoji}", message.author, payload.member, message.created_at, message=message)
@@ -518,10 +523,12 @@ class Moderation(commands.Cog):
                     try:
                         await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
                     except:
-                        traceback.print_exc()
+                        await self.console.print_error(None, traceback.print_exc())
+                        # traceback.print_exc()
                     log.to_dataframe()
         except:
-            traceback.print_exc()
+            await self.console.print_error(None, traceback.print_exc())
+            # traceback.print_exc()
 
     # KICKS & BANS
     @commands.Cog.listener()
@@ -543,7 +550,8 @@ class Moderation(commands.Cog):
             try:
                 await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
             except:
-                traceback.print_exc()
+                await self.console.print_error(None, traceback.print_exc())
+                # traceback.print_exc()
             log.to_dataframe()
 
         if entry.action == discord.AuditLogAction.ban:
@@ -554,7 +562,8 @@ class Moderation(commands.Cog):
             try:
                 await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
             except:
-                traceback.print_exc()
+                await self.console.print_error(None, traceback.print_exc())
+                # traceback.print_exc()
             log.to_dataframe()
             await guild.get_channel(ChannelId.channel_moderation).send(content=None, embed=discord.Embed(color=0x6eaa5e, description=f":hammer: {str(member)} a été ban par {str(entry.user)}"))   
 
@@ -581,7 +590,8 @@ class Moderation(commands.Cog):
                 try:
                     await after.guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
                 except:
-                    traceback.print_exc()
+                    await self.console.print_error(None, traceback.print_exc())
+                    # traceback.print_exc()
                 log.to_dataframe()
 
             # FIN TIMEOUT
@@ -619,10 +629,12 @@ class Moderation(commands.Cog):
                             try:
                                 await after.guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
                             except:
-                                traceback.print_exc()
+                                await self.console.print_error(None, traceback.print_exc())
+                                # traceback.print_exc()
                             log.to_dataframe()
         except:
-            traceback.print_exc()
+            await self.console.print_error(None, traceback.print_exc())
+            # traceback.print_exc()
 
     # MUTE
     @commands.Cog.listener()

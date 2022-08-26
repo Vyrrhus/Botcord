@@ -11,7 +11,10 @@ class Console:
         await self.print(f"{ctx.author.display_name} : `{ctx.prefix}{ctx.command}` in `#{ctx.channel.name}`\n{ctx.message.content}")
     
     async def print_error(self, ctx, error):
-        await self.print(f":x: Exception dans la commande {ctx.command} : {type(error)}\n```{error}```")
+        if ctx:
+            await self.print(f":x: Exception dans la commande {ctx.command} : {type(error)}\n```{error}```")
+        else:
+            await self.print(f":x: Exception : {type(error)}\n```{error}```")
         await self.print(f"Traceback: ```{error.__traceback__}```")
 
     async def print(self, content, embed=None, view=None, file=None, files=None):
