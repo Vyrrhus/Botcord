@@ -84,7 +84,7 @@ class LogView(discord.ui.View):
         
         self.emDict =   {"type": "rich",
                          "author": {"name": f"{str(self.target)}",
-                                    "icon_url": self.target.avatar.url},
+                                    "icon_url": self.target.display_avatar.url},
                          "color": 0x1db868,
                          "footer": {"text": f"ID : {self.target.id}"}}
         
@@ -267,7 +267,7 @@ class Data:
     def embed(self, isLog=False, isSanction=False):
         emDict = {"type": "rich",
                   "author": {"name": f"{self.type} | {str(self.target)}", 
-                             "icon_url": self.target.avatar.url},
+                             "icon_url": self.target.display_avatar.url},
                   "timestamp": self.time.isoformat(),
                   "fields": [{"name": "Utilisateur",
                               "value": self.target.mention,
@@ -281,7 +281,10 @@ class Data:
         if isLog and self.message:
             emDict["color"] = 0x0153f7
             emDict["fields"].append({"name": "Salon", "value": f"<#{self.message.channel.id}>", "inline": True})
-            emDict["fields"].append({"name": "Message", "value": self.message.content})
+            if len(self.message.content) > 1024:
+                emDict["fields"].append({"name": "Message", "value": self.message.content[:1010] + "... [...]"})
+            else:
+                emDict["fields"].append({"name": "Message", "value": self.message.content})
         
         if isSanction:
             emDict["color"] = 0xfe0000
@@ -311,6 +314,7 @@ class Data:
                 self.type += f' - {delay}'
                 emDict["author"]["name"] = f"{self.type} | {str(self.target)}"
 
+        print(emDict)
         em = discord.Embed.from_dict(emDict)
 
         return em
@@ -398,8 +402,8 @@ class Moderation(commands.Cog):
             modal.duree   = duree
         
             await interaction.response.send_modal(modal)
-        except:
-            self.console.print_error(interaction, traceback.print_exc())
+        except Exception as error:
+            self.console.print_error(interaction, error)
 
     ###########################
     # COMMANDS
@@ -454,8 +458,8 @@ class Moderation(commands.Cog):
             view = LogView(self.bot, ctx, target, user_logs, timeout=120.0)
             view.message = await ctx.send(f"{user_logs.shape[0]} logs trouvés pour {str(target)}", embed=None, view=view)
         
-        except:
-            await self.console.print_error(ctx, traceback.print_exc())
+        except Exception as error:
+            await self.console.print_error(ctx, error)
 
     # SRAM : classement
     @commands.command(name='sram', hidden=True)
@@ -502,8 +506,8 @@ class Moderation(commands.Cog):
                     em  = log.embed(isLog=True)
                     try:
                         await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-                    except:
-                        await self.console.print_error(None, traceback.print_exc())
+                    except Exception as error:
+                        await self.console.print_error(None, error)
                         # traceback.print_exc()
                     log.to_dataframe()
 
@@ -522,12 +526,12 @@ class Moderation(commands.Cog):
                     em  = log.embed(isLog=True)
                     try:
                         await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-                    except:
-                        await self.console.print_error(None, traceback.print_exc())
+                    except Exception as error:
+                        await self.console.print_error(None, error)
                         # traceback.print_exc()
                     log.to_dataframe()
-        except:
-            await self.console.print_error(None, traceback.print_exc())
+        except Exception as error:
+            await self.console.print_error(None, error)
             # traceback.print_exc()
 
     # KICKS & BANS
@@ -549,8 +553,8 @@ class Moderation(commands.Cog):
             em  = log.embed(isSanction=True)
             try:
                 await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-            except:
-                await self.console.print_error(None, traceback.print_exc())
+            except Exception as error:
+                await self.console.print_error(None, error)
                 # traceback.print_exc()
             log.to_dataframe()
 
@@ -561,8 +565,8 @@ class Moderation(commands.Cog):
             em  = log.embed(isSanction=True)
             try:
                 await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-            except:
-                await self.console.print_error(None, traceback.print_exc())
+            except Exception as error:
+                await self.console.print_error(None, error)
                 # traceback.print_exc()
             log.to_dataframe()
             await guild.get_channel(ChannelId.channel_moderation).send(content=None, embed=discord.Embed(color=0x6eaa5e, description=f":hammer: {str(member)} a été ban par {str(entry.user)}"))   
@@ -589,8 +593,8 @@ class Moderation(commands.Cog):
                 em  = log.embed(isSanction=True)
                 try:
                     await after.guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-                except:
-                    await self.console.print_error(None, traceback.print_exc())
+                except Exception as error:
+                    await self.console.print_error(None, error)
                     # traceback.print_exc()
                 log.to_dataframe()
 
@@ -628,12 +632,12 @@ class Moderation(commands.Cog):
                             em  = log.embed(isSanction=True)
                             try:
                                 await after.guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-                            except:
-                                await self.console.print_error(None, traceback.print_exc())
+                            except Exception as error:
+                                await self.console.print_error(None, error)
                                 # traceback.print_exc()
                             log.to_dataframe()
-        except:
-            await self.console.print_error(None, traceback.print_exc())
+        except Exception as error:
+            await self.console.print_error(None, error)
             # traceback.print_exc()
 
     # MUTE
