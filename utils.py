@@ -1,4 +1,5 @@
 from config.id import ConsoleId
+from discord import File
 import traceback
 
 class Console:
@@ -15,7 +16,12 @@ class Console:
             await self.print(f":x: Exception dans la commande {ctx.command} : {type(error)}\n```{error}```")
         else:
             await self.print(f":x: Exception : {type(error)}\n```{error}```")
-        await self.print(f"Traceback: ```{error.__traceback__}```")
+        
+        traceback_str = ''.join(traceback.format_tb(error.__traceback__))
+        error_file = open("data/traceback.txt", "w")
+        error_file.write(traceback_str)
+        error_file.close()
+        await self.print("Traceback", file=File("data/traceback.txt"))
 
     async def print(self, content, embed=None, view=None, file=None, files=None):
         try:
