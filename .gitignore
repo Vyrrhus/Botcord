@@ -1,10 +1,11 @@
 # Data files
-
 *.json
 *.pyc
 *.log
-*.config
-*.dat
 
-!requirements.txt
-!version.config
+# Virtual environment
+env/
+
+# Docker & Makefile
+Dockerfile
+Makefile
