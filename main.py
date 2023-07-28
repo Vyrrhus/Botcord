@@ -31,11 +31,7 @@ except:
     PREFIX = '$'
 
 # VERSION
-try:
-    VERSION = read('config/version.config')
-except:
-    traceback.print_exc()
-    sys.exit()
+from src.config.version import VERSION
 
 # BOT
 bot = commands.Bot(command_prefix=PREFIX, 
