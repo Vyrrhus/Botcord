@@ -33,7 +33,7 @@ class RolesManager:
         elif channel_id not in data[role_id]:  data[role_id].append(channel_id)
 
         with open(self.filename, 'w') as file:
-            json.dump(data, file)
+            json.dump(data, file, indent=4)
         
     def remove(self, role_id: int, channel_id: int) -> None:
         """ Remove a channel for a given role. """
@@ -51,7 +51,7 @@ class RolesManager:
                     data[role_id].remove(channel_id)
             
                 with open(self.filename, 'w') as file:
-                    json.dump(data, file)
+                    json.dump(data, file, indent=4)
 
     def clear_role(self, role_id: int) -> None:
         """ Remove a role from notification in every channel """
@@ -61,7 +61,7 @@ class RolesManager:
             data.pop(role_id)
         
         with open(self.filename, 'w') as file:
-            json.dump(data, file)
+            json.dump(data, file, indent=4)
     
     def clear_channel(self, channel_id: int) -> None:
         """ Clear all roles for a given channel """
@@ -78,7 +78,7 @@ class RolesManager:
         }
 
         with open(self.filename, 'w') as file:
-            json.dump(new_data, file)
+            json.dump(new_data, file, indent=4)
 
     #--------------------------------------------------------------------------
     #   PROPERTIES
@@ -93,8 +93,8 @@ class RolesManager:
         """ Read external file to get data """
         with open(self.filename, 'r') as file:
             data = json.load(file)
-        
-        return data
+
+        return {int(key): value for key, value in data.items()}
 
 class RolesView(discord.ui.View):
     """ Dropdown + Button for Roles """
@@ -109,7 +109,30 @@ class RolesView(discord.ui.View):
         self.manager     = manager
 
     #--------------------------------------------------------------------------
-    @discord.ui.select(cls=discord.ui.RoleSelect, min_values=0, max_values=25)
+    async def interaction_check(
+            self, 
+            interaction: discord.Interaction
+            ) -> bool:
+        """ Only author can interact """
+        if interaction.user == self.interaction.user:
+            return True
+        else:
+            emb = discord.Embed(
+                description=(
+                f"Seul l'auteur de la commande peut interagir ! "
+                ),
+                color=16711680
+            )
+            await interaction.response.send_message(
+                embed=emb, 
+                ephemeral=True)
+            return False
+
+    #--------------------------------------------------------------------------
+    @discord.ui.select(
+            cls=discord.ui.RoleSelect, 
+            min_values=0, max_values=25,
+            placeholder="Sélectionner le·s rôle·s à suivre")
     async def select_role(
         self, 
         interaction: discord.Interaction, 
@@ -119,10 +142,30 @@ class RolesView(discord.ui.View):
         for value in select.values:
             self.manager.append(value.id, interaction.channel_id)
 
+        if select.values:
+            await interaction.response.edit_message(
+                content=(
+                f":spy: **Les rôles suivants sont désormais observés** :spy:\n"
+                ) + "\n".join(["▫️ " + role.name for role in select.values]),
+                embed=None,
+                view=None
+            )
+        
+        else:
+            await interaction.response.edit_message(
+                content=f"**Aucun rôle n'est observé.** ",
+                embed=None,
+                view=None
+            )
+        
+        message = await interaction.original_response()
+        await message.pin()
+
 class RolesCog(commands.Cog):
     """ RolesCog Class """
     def __init__(self, bot: commands.Bot):
         """ RolesCog Constructor """
+        print(f"Cog [{self.__cog_name__}] activé.")
         self.bot     = bot
         self.manager = RolesManager(self.bot)
         
@@ -146,8 +189,7 @@ class RolesCog(commands.Cog):
         view = RolesView(interaction, self.manager)
         await interaction.response.send_message(
             embed=emb,
-            view=view,
-            ephemeral=True
+            view=view
         )
 
     #--------------------------------------------------------------------------
@@ -174,7 +216,7 @@ class RolesCog(commands.Cog):
         
         # Notification
         isRemoved = True if len(rolesRemoved) > 0 else False
-        
+
         for channel_id in self.manager.data[role.id]:
             channel = after.guild.get_channel_or_thread(channel_id)
 
@@ -185,7 +227,7 @@ class RolesCog(commands.Cog):
                     f":{'red' if isRemoved else 'green'}_circle: "
                     f"{after.mention} a "
                     f"{'perdu' if isRemoved else 'obtenu'} "
-                    f"le rôle {role.name}"
+                    f"le rôle **{role.name}**"
                     )
                 )
             
@@ -193,3 +235,6 @@ class RolesCog(commands.Cog):
             except AttributeError:
                 print(f"Channel or thread with ID {channel.id} not found")
                 self.manager.remove(role.id, channel_id)
+
+async def setup(bot):
+    await bot.add_cog(RolesCog(bot))
