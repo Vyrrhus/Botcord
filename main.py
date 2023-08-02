@@ -16,13 +16,11 @@ from cogsManager import *
 from config.config import TOKEN, PREFIX, ClassID
 from config.version import VERSION
 
-id = ClassID()
-
 ###############################################################################
 #   BOT
 BOTCORD = commands.Bot(
     command_prefix=PREFIX,
-    owner_id=id.owner,
+    owner_id=ClassID().owner,
     intents=discord.Intents.all()
     )
 
@@ -50,7 +48,7 @@ async def on_ready():
 #------------------------------------------------------------------------------
 # VERSION
 @BOTCORD.tree.command(name='version')
-@check.is_owner(id)
+@check.is_owner()
 async def _version(interaction: discord.Interaction):
     """ Version du bot """
     await interaction.response.send_message(
@@ -61,7 +59,7 @@ async def _version(interaction: discord.Interaction):
 #------------------------------------------------------------------------------
 # LOGOUT
 @BOTCORD.tree.command(name='logout')
-@check.is_owner(id)
+@check.is_owner()
 async def _logout(interaction: discord.Interaction):
     """ Log out le bot """
     await interaction.response.send_message(f"Log out :zzz:")
@@ -70,7 +68,7 @@ async def _logout(interaction: discord.Interaction):
 #------------------------------------------------------------------------------
 # COGS MANAGER
 @BOTCORD.tree.command(name='cogs')
-@check.is_owner(id)
+@check.is_owner()
 async def _cogs(interaction: discord.Interaction):
     """ Cogs Manager """
     manager = CogsManager(BOTCORD)
