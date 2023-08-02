@@ -45,6 +45,15 @@ async def on_ready():
     print(f"Logged in as {BOTCORD.user} (ID : {BOTCORD.user.id})")
     print(f"------")
 
+    manager = CogsManager(BOTCORD)
+    if manager.cogs:
+        for cog in manager.cogs:
+            await manager.load(cog)
+            print(f"Cog [{cog}] activé au démarrage.")
+    else:
+        print("Aucun cog n'est activé.")
+
+
 #------------------------------------------------------------------------------
 # VERSION
 @BOTCORD.tree.command(name='version')
@@ -74,16 +83,11 @@ async def _cogs(interaction: discord.Interaction):
     manager = CogsManager(BOTCORD)
     await CogsPaginator(interaction, manager).start()
 
+
+
 ###############################################################################
 #   RUN
-async def start():
-    """ Start BOTCORD """
-    manager = CogsManager(BOTCORD)
-    for cog in manager.cogs:
-        await manager.load(cog)
-        print(f"Cog [{cog}] activé au démarrage.")
-    
-    await BOTCORD.start(TOKEN)
 
 if __name__ == '__main__':
-    asyncio.run(start())
+    # asyncio.run(start())
+    BOTCORD.run(TOKEN)
