@@ -18,6 +18,10 @@ class ClassID:
     def __init__(self):
         """ ID Constructor """
         self.owner: int = None
+        self.guild: int = None
+        self.staff: int = None
+
+        # Set all attributes
         data = self._read()
         for key, value in data.items():
             setattr(self, key, value)
