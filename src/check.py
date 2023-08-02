@@ -7,17 +7,29 @@ from config.config import ClassID
 ###############################################################################
 #   INTERACTIONS CHECK DECORATORS
 
-def is_owner(id: ClassID):
-	def predicate(interaction: discord.Interaction) -> bool:
-		return interaction.user.id == id.owner
-	return app_commands.check(predicate)
-
-def check_category(id: int):
+#------------------------------------------------------------------------------
+#   GENERAL CHECKS
+def is_category(id: int):
     def predicate(interaction: discord.Interaction) -> bool:
         return interaction.channel.category_id == id
     return app_commands.check(predicate)
 
-def check_channel(id: int):
+def is_channel(id: int):
     def predicate(interaction: discord.Interaction) -> bool:
         return interaction.channel_id == id
     return app_commands.check(predicate)
+
+def is_role(id: int):
+    def predicate(interaction: discord.Interaction) -> bool:
+        return id in [role.id for role in interaction.user.roles]
+    return app_commands.check(predicate)
+
+#------------------------------------------------------------------------------
+#   SPECIFIC CHECKS
+def is_owner():
+	def predicate(interaction: discord.Interaction) -> bool:
+		return interaction.user.id == ClassID().owner
+	return app_commands.check(predicate)
+
+def is_staff():
+    return is_role(ClassID().staff)
