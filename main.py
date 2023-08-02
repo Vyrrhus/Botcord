@@ -49,7 +49,6 @@ async def on_ready():
     if manager.cogs:
         for cog in manager.cogs:
             await manager.load(cog)
-            print(f"Cog [{cog}] activé au démarrage.")
     else:
         print("Aucun cog n'est activé.")
 
