@@ -4,6 +4,7 @@ import discord
 from typing import Callable, Optional
 
 class Paginator(discord.ui.View):
+    """ Embed with buttons for navigation """
     def __init__(
             self, 
             interaction: discord.Interaction, 
