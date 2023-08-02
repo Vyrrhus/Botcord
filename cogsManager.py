@@ -16,6 +16,7 @@ class CogsManager:
         """ Cogs Manager Constructor """
         self.bot = bot
         self.cogsDir = cogDir
+        self.embed = discord.Embed(title="Gestion des cogs", description="")
         self.cogs_available = [
             cog[:-3]
             for cog in os.listdir(cogDir)
@@ -47,15 +48,14 @@ class CogsManager:
     # Paginator
     async def navigate(self, page: int):
         """ Coroutine for Paginator """
-        emb = discord.Embed(title="Gestion des cogs", description="")
         offset = page - 1
         for cog in self.cogs_available[offset:offset+1]:
             docstring = self.docstring(cog)
-            emb.description += f"**{cog.capitalize()}**\n{docstring}\n"
+            self.embed.description += f"**{cog.capitalize()}**\n{docstring}\n"
         
         n = Paginator.compute_total_pages(len(self.cogs_available), 1)
-        emb.set_footer(text=f"Page {page} / {n}")
-        return emb, n
+        self.embed.set_footer(text=f"Page {page} / {n}")
+        return self.embed, n
     
     #--------------------------------------------------------------------------
     def _read(self, filename='config/extension.config') -> List[str]:
@@ -133,8 +133,6 @@ class CogsPaginator(Paginator):
 
         idxToggle = len(self.children) // 2
         # Set active or inactive style for toggle button
-        print(self.manager.cogs_available)
-        print(self.manager.cogs)
         if self.manager.cogs_available[self.index - 1] in self.manager.cogs:
             self.children[idxToggle].style = self.activeCog["style"]
             self.children[idxToggle].label = self.activeCog["label"]
@@ -154,11 +152,15 @@ class CogsPaginator(Paginator):
         # Disable
         if cog in self.manager.cogs:
             await self.manager.unload(cog)
-            button.style = self.activeCog["style"]
-            button.label = self.activeCog["label"]
+            button.style = self.inactiveCog["style"]
+            button.label = self.inactiveCog["label"]
 
         # Enable
         else:
             await self.manager.load(cog)
-            button.style = self.inactiveCog["style"]
-            button.label = self.inactiveCog["label"]
+            button.style = self.activeCog["style"]
+            button.label = self.activeCog["label"]
+        
+        await interaction.response.edit_message(
+            embed=self.manager.embed, 
+            view=self)

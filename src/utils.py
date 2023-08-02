@@ -4,7 +4,7 @@ import discord
 from typing import Callable, Optional
 
 class Paginator(discord.ui.View):
-    """ Embed with buttons for navigation """
+    """ View with buttons for navigation """
     def __init__(
             self, 
             interaction: discord.Interaction, 
@@ -44,30 +44,19 @@ class Paginator(discord.ui.View):
         """ Start View """
         emb, self.total_pages = await self.get_page(self.index)
 
-        # Single page
-        if self.total_pages == 1:
-            await self.interaction.response.send_message(
-                embed=emb,
-                ephemeral=True)
+        # Fast Buttons Removed
+        if not self.withFastButtons:
+            fastprevious = self.children[0]
+            fastnext     = self.children[-1]
+            self.remove_item(fastprevious)
+            self.remove_item(fastnext)
+            pass
 
-        # Multiple pages
-        elif self.total_pages > 1:
-
-            # Fast Buttons Removed
-            if not self.withFastButtons:
-                print(self.children)
-                fastprevious = self.children[0]
-                fastnext     = self.children[-1]
-                self.remove_item(fastprevious)
-                self.remove_item(fastnext)
-                print(self.children)
-                pass
-
-            self.update_buttons()
-            await self.interaction.response.send_message(
-                embed=emb,
-                ephemeral=True, 
-                view=self)
+        self.update_buttons()
+        await self.interaction.response.send_message(
+            embed=emb,
+            ephemeral=True, 
+            view=self)
 
     async def edit_page(self, interaction: discord.Interaction):
         """ Navigate through pages when on_click event """
@@ -120,11 +109,6 @@ class Paginator(discord.ui.View):
         """ Go to last page """
         self.index = self.total_pages
         await self.edit_page(interaction)
-
-    async def on_timeout(self):
-        # remove buttons on timeout
-        message = await self.interaction.original_message()
-        await message.edit(view=None)
 
     @staticmethod
     def compute_total_pages(
