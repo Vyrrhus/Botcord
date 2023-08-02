@@ -71,7 +71,7 @@ class CogsManager:
             cog: str, 
             filename='config/extension.config') -> None:
         """ Add a new cog to the extension.config file"""
-        cogs = self._read()
+        cogs = self._read(filename)
         if cog not in cogs:
             cogs.append(cog)
         
@@ -83,7 +83,7 @@ class CogsManager:
             cog: str,
             filename='config/extension.config') -> None:
         """ Remove a cog from the extension.config file"""
-        cogs = self._read()
+        cogs = self._read(filename)
         if cog in cogs:
             cogs.remove(cog)
 
