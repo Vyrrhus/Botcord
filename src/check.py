@@ -33,3 +33,8 @@ def is_owner():
 
 def is_staff():
     return is_role(ClassID().staff)
+
+def can_kick():
+     def predicate(interaction: discord.Interaction) -> bool:
+          return interaction.user.guild_permissions.kick_members
+     return app_commands.check(predicate)
