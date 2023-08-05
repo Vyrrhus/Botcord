@@ -51,7 +51,7 @@ class CogsManager:
         offset = page - 1
         for cog in self.cogs_available[offset:offset+1]:
             docstring = self.docstring(cog)
-            self.embed.description += f"**{cog.capitalize()}**\n{docstring}\n"
+            self.embed.description = f"**{cog.capitalize()}**\n{docstring}\n"
         
         n = Paginator.compute_total_pages(len(self.cogs_available), 1)
         self.embed.set_footer(text=f"Page {page} / {n}")
@@ -111,13 +111,10 @@ class CogsPaginator(Paginator):
         super().__init__(interaction, manager.navigate, withFastButtons=False)
 
     #--------------------------------------------------------------------------
-    
     async def start(self):
         """ Start View """
         buttons = self.children
-
-        for button in self.children:
-            self.remove_item(button)
+        self.clear_items()
 
         idx = len(buttons) // 2
         buttons[idx:idx] = [buttons.pop()]
@@ -141,7 +138,7 @@ class CogsPaginator(Paginator):
             self.children[idxToggle].label = self.inactiveCog["label"]
 
     #--------------------------------------------------------------------------
-    @discord.ui.button(label="Button")
+    @discord.ui.button(label="Button", row=4)
     async def toggle(
         self,
         interaction: discord.Interaction,
