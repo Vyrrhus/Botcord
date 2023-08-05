@@ -48,7 +48,10 @@ async def on_ready():
     manager = CogsManager(BOTCORD)
     if manager.cogs:
         for cog in manager.cogs:
-            await manager.load(cog)
+            try:
+                await manager.load(cog)
+            except commands.errors.ExtensionAlreadyLoaded:
+                pass
     else:
         print("Aucun cog n'est activé.")
 
