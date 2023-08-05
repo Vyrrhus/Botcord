@@ -1,6 +1,7 @@
-""" Cette extension s'occupe de la gestion des roles. Lors de 
-    l'attribution (ou la perte) d'un rôle, une notification peut être
-    émise dans le salon désiré, pour les rôles choisis.
+""" Cette extension s'occupe de la gestion des roles :
+    ▫️ **/role** : lorsqu'un membre obtient ou perd l'un des rôles 
+    sélectionnés, une notification se fait dans le canal où la
+    commande a été faite.
 """
 from typing import Dict, List, Optional
 import discord
@@ -236,5 +237,5 @@ class RolesCog(commands.Cog):
                 print(f"Channel or thread with ID {channel.id} not found")
                 self.manager.remove(role.id, channel_id)
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(RolesCog(bot))
