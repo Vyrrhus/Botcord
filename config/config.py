@@ -1,7 +1,7 @@
 """ Config Classes
 """
 import json
-from typing import Dict
+from typing import Dict, List
 
 ###############################################################################
 #   PRIVATE FUNCTIONS
@@ -17,9 +17,13 @@ class ClassID:
     """ ClassID Class """
     def __init__(self):
         """ ID Constructor """
-        self.owner: int = None
-        self.guild: int = None
-        self.staff: int = None
+        self.owner:                 int = None
+        self.guild:                 int = None
+        self.staff:                 int = None
+        self.category_moderation:   int = None
+        self.channel_moderation:    int = None
+        self.channel_logs:          int = None
+        self.quarantine:            List[int] = None
 
         # Set all attributes
         data = self._read()

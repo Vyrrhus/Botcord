@@ -1,654 +1,617 @@
-import discord
-from discord import app_commands
-from discord.ext import commands
-from check import check_category
-from utils import Console
-from config.id import *
-import traceback
-import asyncio
-import numpy as np
+""" Cette extension ajoute des outils spécifiques à la modération :
+
+    ▫️ ban temporaire
+    ▫️ gestion des logs
+    ▫️ suppression et log de messages par emoji en réaction
+"""
+from __future__ import annotations
+from typing import List
 import pandas as pd
-import typing
-from datetime import datetime, timedelta
+from datetime import timedelta
+import asyncio
 
-# commande ?sram pour avoir un classement des meilleurs modérateurs
+import discord
+from discord.ext import commands
+from discord import app_commands
+from src.utils import Paginator
+from config.config import ClassID
+import src.check as check
 
-# UI & VIEW
-class LogButton(discord.ui.Button):
-    def __init__(self,id):
-        if id < 0:
-            super().__init__(row=0)
-        else:
-            super().__init__(row=1)
-        self.id = id + 1
-        self.emojis = ["\U000023ee", "\U000025c0", "", "\U000025b6", "\U000023ed"]
+###############################################################################
+#   LOGS CLASS
 
-        if self.id == 0:
-            self.style = discord.ButtonStyle.success
-            self.label = "Voir logs"
-        elif self.id == 3:
-            self.style = discord.ButtonStyle.primary
-            self.label = "Logs"
-            self.disabled = True
-        elif self.id == -1:
-            self.style = discord.ButtonStyle.danger
-            self.label = "Supprimer"
-        else:
-            self.style = discord.ButtonStyle.secondary
-            self.label = self.emojis[id]
-            
+class Logs:
+    """ Logs Class """
+    def __init__(
+            self,
+            type: str,
+            target_id: int,
+            author_id: int,
+            time: str,
+            reason: str | None = None,
+            content: str | None = None,
+            content_id: int | None = None,
+            channel_id: int | None = None
+        ) -> None:
+        """ Logs Constructor """
+        self.type       = type
+        self.target_id  = target_id
+        self.author_id  = author_id
+        self.time       = time
+        self.reason     = reason
+        self.content    = content
+        self.content_id = content_id
+        self.channel_id = channel_id
     
-    async def callback(self, interaction: discord.Interaction):
-        assert self.view is not None
-        view: LogView = self.view
+    #--------------------------------------------------------------------------
+    #   PROPERTIES
+    @property
+    def to_dict(self):
+        """ Convert from Logs to dict type """
+        return {
+            "type":         self.type,
+            "target_id":    self.target_id,
+            "author_id":    self.author_id,
+            "time":         self.time,
+            "reason":       self.reason if self.reason else "",
+            "content":      self.content if self.content else "",
+            "content_id":   self.content_id if self.content_id else "",
+            "channel_id":   self.channel_id if self.channel_id else ""
+        }
 
-        # Bouton initial
-        if self.id == 0:
-            view.start()
+    #--------------------------------------------------------------------------
+    #   METHODS
+    def to_embed(self, bot: commands.Bot) -> discord.Embed:
+        """ Convert Log to a discord.Embed"""
+        target  = bot.get_user(self.target_id)
+        author  = bot.get_user(self.author_id)
+        channel = bot.get_channel(self.channel_id) if self.channel_id else None
+        fields = []
 
-        # Navigation dans les logs
-        if self.id == 1:
-            view.num = 1
-        if self.id == 2:
-            view.num -= 1
-        if self.id == 4:
-            view.num += 1
-        if self.id == 5:
-            view.num = view.logs.shape[0]
+        if author:          fields.append({
+            "name":     "Modérateur",
+            "value":    f"{author.mention}",
+            "inline":   True
+            })
+        if channel:         fields.append({
+            "name":     "Canal",
+            "value":    f"{channel.mention}",
+            "inline":   True
+        })
+        if self.content:    fields.append({
+            "name":     "Message",
+            "value":    self.content
+        })
+        if self.reason:     fields.append({
+            "name":     "Raison",
+            "value":    self.reason
+        })
+
+        embedDict = {
+            "type": "rich",
+            "title": self.type,
+            "author": {
+                "name": f"{str(target)}",
+                "icon_url": target.display_avatar.url
+            },
+            "footer": {
+                "text": f"ID : {target.id}"
+            },
+            "fields": fields,
+            "timestamp": self.time
+        }
+
+        # Colors
+        if "Ban" in self.type:              embedDict["color"] = 0xcc3e2e
+        elif "Kick" in self.type:           embedDict["color"] = 0xe6cd5e
+        elif "👀" in self.type:             embedDict["color"] = 0x4b8262
+        elif "❌" in self.type:             embedDict["color"] = 0x4b8262
+        elif "QUARANTAINE" in self.type:    embedDict["color"] = 0xd17038
         
-        # Clear (seulement pour le propriétaire)
-        if self.id == -1 and interaction.user == view.ctx.author:
-            view.clear_log()
+        return discord.Embed.from_dict(embedDict)
 
-        # Update
-        if view.nb > 0:
-            view.update()
-            em = discord.Embed.from_dict(view.emDict)
-            await interaction.response.edit_message(content=None, embed=em, view=view)
-        
-        # Plus aucun log
-        else:
-            await interaction.response.edit_message(content=f':x: Plus aucun log pour {str(view.target)}', embed=None, view=None)
-            view.stop()
-        
-class LogView(discord.ui.View):
-    def __init__(self, bot, context, target, user_logs, timeout=180.0):
-        super().__init__()
-        self.bot    = bot
-        self.ctx    = context
-        self.target = target
-        self.logs   = user_logs
-        self.nb     = user_logs.shape[0]
-        self.num    = 1
-        self.timeout = timeout
-        
-        self.emDict =   {"type": "rich",
-                         "author": {"name": f"{str(self.target)}",
-                                    "icon_url": self.target.display_avatar.url},
-                         "color": 0x1db868,
-                         "footer": {"text": f"ID : {self.target.id}"}}
-        
-        # Ajouter un bouton pour clear et un select pour choisir entre les types de logs
-        self.add_item(LogButton(-1))
-
-    def clear_log(self):
-        # Suppression du log
-        index = self.logs.iloc[[self.num - 1]].index
-        self.logs = self.logs.drop(index[0])
-        self.nb = self.logs.shape[0]
-
-        if self.num > self.nb:
-            self.num = self.nb
-
-        # Mise à jour Data
-        Data.remove_index(index[0])
-
-        # Plus aucun log
-        if self.nb == 0:
-            self.clear_items()
-        return
-    
-    def get_log(self):
-        log = self.logs.iloc[[self.num - 1]].replace({np.nan:None}).to_dict(orient='list')
-        log = {key: log[key][0] for key in log}
-
-        self.emDict["timestamp"] = log["time"]
-        self.emDict["title"] = log["type"]
-        self.emDict["fields"] = []
-
-        moderateur = self.bot.get_user(log['moderateur'])
-        if isinstance(moderateur, discord.User):
-            self.emDict["fields"].append({"name": "Modérateur", "value": f"{moderateur.mention}", "inline": True})
-        
-        if log['channel_id'] and log['contenu']:
-            self.emDict["fields"].append({"name": "Salon", "value": f"<#{log['channel_id']}>", "inline": True})
-            self.emDict["fields"].append({"name": "Message", "value": log['contenu']})
-        
-        if log['raison']:
-            self.emDict["fields"].append({"name": "Raison", "value": log['raison']})
-        
-        if log['message']:
-            self.emDict["fields"].append({"name": "Message en DM", "value": log['message']})
-
-    def update(self):
-        # Update buttons
-        for child in self.children:
-            if child.id == 1 or child.id == 2:
-                if self.num == 1:
-                    child.disabled=True
-                else:
-                    child.disabled=False
-            
-            if child.id == 4 or child.id == 5:
-                if self.num == self.nb:
-                    child.disabled=True
-                else:
-                    child.disabled=False
-
-            if child.id == 3:
-                child.label = f'Log {self.num} / {self.nb}'
-
-        # Update embed
-        self.get_log()
-
-    def start(self):
-        self.clear_items()
-        for i in range(5):
-            self.add_item(LogButton(i))
-        self.add_item(LogButton(-2))
-    
-    async def on_timeout(self) -> None:
-        self.clear_items()
-        await self.message.edit(content=f"{self.logs.shape[0]} logs trouvés pour {str(self.target)}", embed=None, view=None)
-        self.stop()
-        return await super().on_timeout()
-
-class BanModal(discord.ui.Modal, title=''):
-    path = "data/bantemp.dat"
-    reason  = discord.ui.TextInput(
-            label='Raison',
-            style=discord.TextStyle.long,
-            placeholder='Ban parce que...')
-    message = discord.ui.TextInput(
-            label='Message envoyé en DM (optionnel)',
-            style=discord.TextStyle.long,
-            required=False)
-    
+    #--------------------------------------------------------------------------
+    #   STATIC METHODS
     @staticmethod
-    def clear(user_id):
-        df = pd.read_csv(BanModal.path)
-        index = df.set_index('user').index.get_loc(user_id)
-        df = df.drop(index)
-        df.to_csv(BanModal.path, index=False)
+    def from_serie(serie: pd.Series) -> Logs:
+        data = serie.to_dict()
+        return Logs(
+            data['type'], 
+            data['target_id'], 
+            data['author_id'], 
+            data['time'],
+            **{
+                key: value 
+                for key, value in data.items()
+                if key not in ['type', 'target_id', 'author_id', 'time']
+            })
+    
+class LogsManager:
+    """ LogsManager Class """
+    def __init__(
+            self, 
+            bot: commands.Bot, 
+            logsFilename='data/moderation.json'
+        ) -> None:
+        """ LogsManager Constructor """
+        self.bot       = bot
+        self.filename  = logsFilename
+        self.embed     = None
+        self.options   = {}
+        self.log: Logs = None
+    
+    #--------------------------------------------------------------------------
+    #   PROPERTIES
+    @property
+    def data(self) -> pd.DataFrame:
+        """ Read external file to get data as pandas.DataFrame object """
+        return pd.read_json(
+            self.filename, 
+            orient="records", 
+            dtype=False, 
+            encoding="utf-8")
+    
+    #--------------------------------------------------------------------------
+    #   METHODS
+    def append(self, log: Logs) -> None:
+        """ Add a new log to the LogsManager file """
+        data = pd.concat(
+            [self.data, pd.DataFrame([log.to_dict])],
+            ignore_index=True
+            ).drop_duplicates()
+        
+        data.to_json(
+            self.filename, 
+            indent=4, 
+            orient="records", 
+            force_ascii=False)
 
+    def remove(self, log: Logs) -> None:
+        """ Remove a log from the LogsManager file """
+        data = self.data
+        idx_to_remove = data[data.eq(log.to_dict).all(axis=1)].index
+
+        data = data.drop(idx_to_remove)
+        data.to_json(
+            self.filename, 
+            indent=4, 
+            orient="records", 
+            force_ascii=False)
+
+    def filter(self, **options) -> pd.DataFrame:
+        """ Filter the data with the options provided """
+        filtered = self.data
+
+        for column_name, value in {**self.options, **options}.items():
+            filtered = filtered[filtered[column_name] == value]
+        
+        return filtered
+    
+    #--------------------------------------------------------------------------
+    #   PAGINATOR NAVIGATION
+    async def navigate(self, page: int):
+        """ Coroutine for Paginator (called by navigation buttons) """
+        dataLogs = self.filter()
+        n        = Paginator.compute_total_pages(len(dataLogs), 1)
+
+        # No log found
+        if n == 0:
+            self.embed = discord.Embed(description="Plus aucun log !")
+            self.log   = None
+        
+        else:
+            self.log = Logs.from_serie(dataLogs.iloc[page - 1])
+            self.embed = self.log.to_embed(self.bot)
+            self.embed.set_footer(text=f"Log {page} / {n}")
+
+        return self.embed, n
+
+    #--------------------------------------------------------------------------
+    #   TO DELETE => convert old .dat file into .json file
     @staticmethod
-    async def unban_task(time, target_id, guild, target=None, bot=None):
-        if time > datetime.today():
-            print(f'sleeping til {time.isoformat()}')
-            await discord.utils.sleep_until(time)
-        BanModal.clear(target_id)
-        if not target and bot:
-            target = await bot.fetch_user(target_id)
-        if target:
-            await guild.unban(target, reason=f"Fin du ban temporaire")
-            await guild.get_channel(ChannelId.channel_moderation).send(embed=discord.Embed(color=0x6eaa5e, description=f"{str(target)} a été unban."))
+    def read_old(filename: str):
+        """ Convert old file to .json """
+        # Convert floats to integers
+        def convert_to_int(value):
+            try:
+                return int(float(value))
+            except (ValueError, TypeError):
+                return value
+        
+        # Read csv => pd.DataFrame
+        data = pd.read_csv(
+            filename,
+            index_col=False,
+            converters={
+                column: convert_to_int 
+                for column in ['user', 'moderateur', 'id', 'channel_id']
+                })
+        
+        # Merge two columns
+        data['content'] = data['message'].fillna(data['contenu'])
+        data.drop(columns=['message', 'contenu'], inplace=True)
 
-    def store_data(self):
-        # Datetime for unban
-        delay = int(self.duree[0])   # Months
-        unban = datetime.today() + timedelta(days=delay*30)
+        # Rename columns
+        data.rename(
+            columns={
+                "user": "target_id", 
+                "moderateur": "author_id", 
+                "raison": "reason",
+                "message": "content",
+                "id": "content_id"
+                }, 
+            inplace=True
+            )
+        
+        data.fillna('', inplace=True)
 
-        df = pd.read_csv(self.path)
-        df.loc[len(df)] = [self.target.id, unban.isoformat()]
-        df.to_csv(self.path, index=False)
+        # pd.DataFrame => .json
+        data.to_json(
+            "data/old_moderation.json",
+            indent=4,
+            orient="records",
+            force_ascii=False)
 
-        return unban
+class LogsView(discord.ui.View):
+    """ Logs View """
+    def __init__(
+            self,
+            interaction: discord.Interaction,
+            manager: LogsManager
+        ) -> None:
+        """ Logs View Constructor """
+        self.interaction    = interaction
+        self.manager        = manager
+        super().__init__(timeout=100)
+    
+    #--------------------------------------------------------------------------
+    async def interaction_check(
+            self, 
+            interaction: discord.Interaction
+            ) -> bool:
+        """ Only author can interact """
+        if interaction.user == self.interaction.user:
+            return True
+        else:
+            emb = discord.Embed(
+                description=(
+                f"Only the author of the command can perform this "
+                f"action."
+                ),
+                color=16711680
+            )
+            await interaction.response.send_message(
+                embed=emb, 
+                ephemeral=True)
+            return False
 
-    async def on_submit(self, interaction: discord.Interaction):
-        # Send DM
-        dm_channel = await self.target.create_dm()
-        em = discord.Embed(
-                    title=f"Tu as été banni de : {interaction.guild.name} pour une durée de {self.duree}.",
-                    description=self.message.value,
-                    color=0xfe0000)
-        await dm_channel.send(embed=em)
+    async def start_paginator(
+            self, 
+            interaction: discord.Interaction,
+            member: discord.Member):
+        """ Handle Paginator View """
+        embed, total_pages = await self.manager.navigate(1) 
+        
+        # No log found
+        if total_pages == 0:
+            embed.description = f"Aucun log trouvé pour : {member.mention}"
+            await interaction.response.edit_message(
+                embed=embed,
+                view=self
+            )
+        
+        # Logs found => starting Paginator View
+        else:
+            await LogsPaginator(interaction, self.manager, self).start()
+
+    #--------------------------------------------------------------------------
+    @discord.ui.select(
+        cls=discord.ui.UserSelect,
+        min_values=1, max_values=1,
+        placeholder="Recherche des logs...",
+        row=0)
+    async def select_user(
+        self,
+        interaction: discord.Interaction,
+        select: discord.ui.UserSelect):
+        """ Selecting User Coroutine """
+        if select.values:
+            self.manager.options["target_id"] = select.values[0].id
+        
+        await self.start_paginator(interaction, select.values[0])
+
+class LogsPaginator(Paginator):
+    """ Logs View """
+    def __init__(
+            self, 
+            interaction: discord.Interaction, 
+            manager: LogsManager,
+            selectView: LogsView
+        ) -> None:
+        """ Logs View Constructor """
+        self.manager    = manager
+        self.selectView = selectView
+        super().__init__(interaction, manager.navigate)
+
+    #--------------------------------------------------------------------------
+    async def start(self):
+        """ Start View """
+        buttons = self.children
+        self.clear_items()
+
+        idx = len(buttons) // 2
+        buttons[idx:idx] = [buttons.pop()]
+
+        for button in buttons:
+            self.add_item(button)
+        
+        # Recompute embed & total pages (duplicate)
+        emb, self.total_pages = await self.get_page(self.index)
+
+        # Fast Buttons Removed
+        if not self.withFastButtons:
+            fastprevious = self.children[0]
+            fastnext     = self.children[-1]
+            self.remove_item(fastprevious)
+            self.remove_item(fastnext)
+            pass
+        
+        self.add_item(self.selectView.children[0])
+        self.update_buttons()
+
+        await self.interaction.response.edit_message(
+            embed=emb,
+            view=self)
+
+    async def edit_page(self, interaction: discord.Interaction):
+        """ Navigate through pages when on_click event """
+        emb, self.total_pages = await self.get_page(self.index)
+
+        # No more log : back to selectView
+        if self.total_pages == 0:
+            await interaction.response.edit_message(
+                embed=emb, 
+                view=self.selectView)
+
+        # Still logs : Paginator continues
+        else:
+            self.update_buttons()
+            await interaction.response.edit_message(embed=emb, view=self)
+
+    def update_buttons(self):
+        """ Update buttons """
+        # Disable buttons whenever useful
+        self.children[0].disabled  = self.index == 1
+        self.children[-2].disabled = self.index == self.total_pages
+
+        if self.withFastButtons:
+            self.children[1].disabled  = self.index == 1
+            self.children[-3].disabled = self.index == self.total_pages
+
+    #--------------------------------------------------------------------------
+    @discord.ui.button(
+        label="Supprimer log", 
+        style=discord.ButtonStyle.red,
+        row=4)
+    async def deleteLog(
+        self,
+        interaction: discord.Interaction,
+        button: discord.Button):
+        """ Delete Log """
+        self.manager.remove(self.manager.log)
+        self.manager.log = None
+
+        if self.index == self.total_pages:
+            self.index -= 1
+        
+        await self.edit_page(interaction)
+
+###############################################################################
+#   MODERATION COG
+
+class ModerationCog(commands.Cog):
+    """ ModerationCog Class """
+    def __init__(self, bot: commands.Bot):
+        """ ModerationCog Constructor """
+        print(f"Cog [{self.__cog_name__}] activé.")
+        self.bot     = bot
+        self.manager = LogsManager(self.bot)
+    
+    #--------------------------------------------------------------------------
+    #   SLASH COMMANDS
+    @app_commands.command(name="logs")
+    @app_commands.guilds(ClassID().guild)
+    @check.can_kick()
+    async def _logsCommand(
+        self,
+        interaction: discord.Interaction
+        ):
+        """ Gérer les logs """
+        view = LogsView(interaction, self.manager)
+        await interaction.response.send_message(
+            view=view,
+            ephemeral=False
+        )
+
+    #--------------------------------------------------------------------------
+    #   EVENT LISTENERS
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        """ Check if a new Member triggers a flag from logs """
+        logs = LogsManager(self.bot).filter(target_id=member.id)
+        if len(logs) > 0:
+            channel = member.guild.get_channel(
+                ClassID().channel_moderation
+                )
+            await channel.send(embed=discord.Embed(description=(
+                f":star: {str(member)} a rejoint le serveur "
+                f"avec {len(logs)} logs."
+                )))
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(
+        self, 
+        member: discord.Member,
+        before: discord.VoiceState,
+        after: discord.VoiceState
+        ):
+        """ Notification for mute & unmute """
+        if after.mute and not before.mute:
+            embed = discord.Embed(
+                description=(
+                    f":mute: {member.mention} a été mute dans "
+                    f"{after.channel.mention}"
+                    ), 
+                color=0xfe0000
+                )
+        elif before.mute and not after.mute:
+            embed = discord.Embed(
+                description=f":loud_sound: {member.mention} n'est plus mute !",
+                color=0x6eaa5e
+            )
+        else:
+            return
+        
+        channel = member.guild.get_channel(ClassID().channel_moderation)
+        await channel.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
+        """ Check if a Member has been kicked, banned or timed out """
+        # Kick
+        if entry.action == discord.AuditLogAction.kick:
+            log = Logs(
+                f"Kick", 
+                entry.target.id, entry.user_id, 
+                entry.created_at.isoformat(), 
+                reason=entry.reason
+            )
+            self.manager.append(log)
+            channel = entry.guild.get_channel(ClassID().channel_logs)
+            await channel.send(embed=log.to_embed(self.bot))
         
         # Ban
-        await self.target.ban(delete_message_days=0, reason=self.reason.value)
-        
-        # Log
-        unban_datetime = self.store_data()
-        log = Data(f"Ban temporaire {self.duree}", self.target, interaction.user, interaction.created_at, reason=self.reason.value, dm=self.message.value)
-        em  = log.embed(isSanction=True)
-        await interaction.guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-        log.to_dataframe()
-
-        # Response
-        await interaction.response.send_message(embed=discord.Embed(color=0x6eaa5e, description=f":hammer: {str(self.target)} a été banni du serveur pour une durée de {self.duree}"))
-
-        # Task for unban
-        await BanModal.unban_task(unban_datetime, self.target.id, interaction.guild, target=self.target)
-
-    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        await self.console.print_error(interaction, error)
-
-# STRUCTURES
-class Data:
-    path = 'data/moderation.dat'
-
-    def __init__(self, title, target, author, time, reason='', dm='', message=''):
-        self.path    = Data.path
-        self.type    = title.upper()
-        self.target  = target
-        self.author  = author
-        self.time    = time
-        self.reason  = reason
-        self.dm      = dm
-        self.message = message
-    
-    @staticmethod
-    def get_logs(user):
-        df = pd.read_csv(Data.path)
-        df = df[df['user'] == user.id]
-        return df
-
-    @staticmethod
-    def get_moderateur(user):
-        df = pd.read_csv(Data.path)
-        df = df[df['moderateur'] == user.id]
-        return df
-
-    @staticmethod
-    def remove_index(index):
-        df = pd.read_csv(Data.path)
-        df = df.drop(index)
-        df.to_csv(Data.path, index=False)
-
-    def embed(self, isLog=False, isSanction=False):
-        emDict = {"type": "rich",
-                  "author": {"name": f"{self.type} | {str(self.target)}", 
-                             "icon_url": self.target.display_avatar.url},
-                  "timestamp": self.time.isoformat(),
-                  "fields": [{"name": "Utilisateur",
-                              "value": self.target.mention,
-                              "inline": True},
-                              {"name": "Modérateur",
-                              "value": self.author.mention,
-                              "inline": True}],
-                   "footer": {"text": f"ID : {self.target.id}"}}
-        
-        # Modération d'un message
-        if isLog and self.message:
-            emDict["color"] = 0x0153f7
-            emDict["fields"].append({"name": "Salon", "value": f"<#{self.message.channel.id}>", "inline": True})
-            if len(self.message.content) > 1024:
-                emDict["fields"].append({"name": "Message", "value": self.message.content[:1010] + "... [...]"})
-            else:
-                emDict["fields"].append({"name": "Message", "value": self.message.content})
-        
-        if isSanction:
-            emDict["color"] = 0xfe0000
-            if self.reason:
-                emDict["fields"].append({"name": "Raison", "value": self.reason})
-            if self.dm:
-                emDict["fields"].append({"name": "Message en DM", "value": self.dm})
-            if self.target.timed_out_until and self.type == "TIMEOUT":
-                timedelta = self.target.timed_out_until - self.time
-                days  = timedelta.days
-                hours = (timedelta.seconds // 3600) % 24
-                mins  = (timedelta.seconds // 60) % 60
-                secs  = timedelta.seconds % 60
-                if days > 1:
-                    delay = "7j"
-                elif hours > 1:
-                    delay = "1j"
-                elif mins > 10:
-                    delay = "1h"
-                elif mins > 5:
-                    delay = "10mn"
-                elif mins > 1:
-                    delay = "5mn"
-                else:
-                    delay = "1mn"
-                
-                self.type += f' - {delay}'
-                emDict["author"]["name"] = f"{self.type} | {str(self.target)}"
-
-        print(emDict)
-        em = discord.Embed.from_dict(emDict)
-
-        return em
-
-    def already_log(self):
-        df = pd.read_csv(self.path)
-        if self.message:
-            df = df[df['id'] == self.message.id]
-            if df.shape[0] > 0:
-                return True
-        return False
-
-    def to_dataframe(self):
-        df = pd.read_csv(self.path)
-        if self.message:
-            id         = self.message.id
-            channel_id = self.message.channel.id
-            content    = self.message.content
-        else:
-            id, channel_id, content = None, None, ''
-        
-        df.loc[len(df)] = [self.type, self.target.id, self.author.id, self.time.isoformat(), self.reason.replace('\n', '\\n'), self.dm.replace('\n', '\\n'), id, channel_id, content.replace('\n', '\\n')]
-        df.to_csv(self.path, index=False)
-
-# COG CLASS
-class Moderation(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-        asyncio.get_event_loop().create_task(self.init_unban_task())
-
-    async def init_unban_task(self):
-        df = pd.read_csv(BanModal.path)
-        await self.bot.wait_until_ready()
-        self.console = Console(self.bot, ConsoleId.moderation)
-        guild = self.bot.get_guild(GuildId.default)
-        for ii in range(df.shape[0]):
-            df_ban = df.iloc[ii]
-            time   = datetime.fromisoformat(df_ban['time'])
-            await BanModal.unban_task(time, df_ban['user'], guild, bot=self.bot)
-
-    ###########################
-    # COG COMMANDS
-    async def cog_before_invoke(self, ctx) -> None:
-        await self.console.print_command(ctx)
-        return await super().cog_before_invoke(ctx)
-    
-    async def cog_command_error(self, ctx, error: Exception) -> None:
-
-        await self.console.print_error(ctx, error)
-        return await super().cog_command_error(ctx, error)
-    
-    async def bot_check_once(self, ctx) -> bool:
-        self.console = Console(self.bot, ConsoleId.moderation)
-        return super().bot_check_once(ctx)
-
-    ###########################
-    # SLASH COMMANDS
-
-    # Check
-    def check_ban_command():
-        def predicate(interaction: discord.Interaction) -> bool:
-            if interaction.channel.category.id == ChannelId.category_moderation:
-                return interaction.user.guild_permissions.ban_members and interaction.guild.me.guild_permissions.ban_members
-            else:
-                return False
-        return app_commands.check(predicate)
-
-    # BAN TEMP
-    @app_commands.command(name='bantemp', description="Ban temporairement un membre du serveur")
-    @app_commands.guilds(discord.Object(GuildId.default))
-    @app_commands.describe(cible="La personne à ban", duree="Durée du ban temporaire")
-    @check_ban_command()
-    async def _bantemp(self, interaction: discord.Interaction, cible: discord.Member, duree: typing.Literal['1 mois', '3 mois', '6 mois', '12 mois']):
-        try:
-            if interaction.user.roles[-1] <= cible.roles[-1]:
-                await interaction.response.send_message(embed=discord.Embed(description=f"Impossible de bannir quelqu'un ayant un rôle supérieur ou égal au sien.", color=0xfe0000))
-                return
-            
-            # Modal
-            modal = BanModal()
-            modal.title   = f"Ban {str(cible)} ({duree})"
-            modal.bot     = self.bot
-            modal.console = self.console
-            modal.target  = cible
-            modal.duree   = duree
-        
-            await interaction.response.send_modal(modal)
-        except Exception as error:
-            self.console.print_error(interaction, error)
-
-    ###########################
-    # COMMANDS
-
-    # LIBRE
-    @commands.command(name='libre')
-    @commands.has_guild_permissions(kick_members=True)
-    @check_category(ChannelId.category_moderation)
-    async def _libre(self, ctx):
-        await ctx.message.delete()
-        await ctx.send('```LIBRE```')
-
-    # WARN
-    @commands.hybrid_command(name='warn', brief='Envoie un avertissement en privé à la personne ciblée')
-    @app_commands.guilds(discord.Object(GuildId.default))
-    @app_commands.describe(cible="La personne à avertir", message="contenu de l'avertissement envoyé en DM")
-    @commands.has_guild_permissions(kick_members=True)
-    @check_category(ChannelId.category_moderation)
-    async def _warn(self, ctx: commands.Context, cible: discord.Member, *, message: str):
-        if ctx.author.roles[-1] <= cible.roles[-1]:
-            await ctx.send(content=None, embed=discord.Embed(description=f"Impossible d'envoyer un avertissement à quelqu'un ayant un rôle supérieur ou égal au sien.", color=0xfe0000))
-            return
-
-        # Send warn
-        dm_channel = await cible.create_dm()
-        em = discord.Embed(description=f"Tu as reçu un avertissement de **{ctx.guild.name}** : \n{message}", color=0xfe0000)
-        await dm_channel.send(content=None, embed=em)
-
-        # Log warn
-        log = Data(f"Warn", cible, ctx.author, ctx.message.created_at, dm=message)
-        em  = log.embed(isSanction=True)
-        await ctx.guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-        log.to_dataframe()
-
-        # Answer
-        await ctx.send(content=None, embed=discord.Embed(color=0x6eaa5e, description=f"{str(cible)} a reçu un avertissement."))
-
-    # LOG VIEW : SEE AND CLEAR LOGS
-    @commands.command(name='log')
-    @commands.has_guild_permissions(kick_members=True)
-    @check_category(ChannelId.category_moderation)
-    async def _log(self, ctx, target:discord.User):
-        try:
-
-            user_logs = Data.get_logs(target)
-            if user_logs.shape[0] == 0:
-                await ctx.channel.send(f':x: Aucun log trouvé pour {str(target)}')
-                return
-
-            user_logs['id'] = user_logs['id'].astype('Int64')
-            user_logs['channel_id'] = user_logs['channel_id'].astype('Int64')
-            view = LogView(self.bot, ctx, target, user_logs, timeout=120.0)
-            view.message = await ctx.send(f"{user_logs.shape[0]} logs trouvés pour {str(target)}", embed=None, view=view)
-        
-        except Exception as error:
-            await self.console.print_error(ctx, error)
-
-    # SRAM : classement
-    @commands.command(name='sram', hidden=True)
-    @commands.has_guild_permissions(kick_members=True)
-    @check_category(ChannelId.category_moderation)
-    async def _classement(self, ctx):
-        return
-
-    ###########################
-    # EVENTS
-
-    # MEMBER JOIN
-    @commands.Cog.listener()
-    async def on_member_join(self, member):
-        # NOT VERIFIED YET
-        user_logs = Data.get_logs(member)
-        if user_logs.shape[0] > 0:
-            channel = member.guild.get_channel(ChannelId.channel_moderation)
-            await channel.send(embed=discord.Embed(description=f':star: {str(member)} a rejoint le serveur avec {user_logs.shape[0]} logs'))
-
-    # EMOJI REACTIONS
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-        try:
-
-            guild = self.bot.get_guild(payload.guild_id)
-
-            if payload.member.guild_permissions.manage_messages and guild.me.guild_permissions.manage_messages:
-
-                # LOG
-                if str(payload.emoji) == '\U0001f440':
-                    channel = guild.get_channel(payload.channel_id)
-                    message = await channel.fetch_message(payload.message_id)
-                    if not isinstance(message.author, discord.User):
-                        if message.author.guild_permissions.kick_members:
-                            return
-                    
-                    await self.console.print(f"Log :eyes: de {message.author.display_name} dans #{channel.name} par {payload.member.display_name}")
-                    await message.remove_reaction(payload.emoji, payload.member)
-
-                    log = Data(f"LOG {payload.emoji}", message.author, payload.member, message.created_at, message=message)
-                    if log.already_log():
-                        return
-                    em  = log.embed(isLog=True)
-                    try:
-                        await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-                    except Exception as error:
-                        await self.console.print_error(None, error)
-                        # traceback.print_exc()
-                    log.to_dataframe()
-
-                # DELETE
-                elif str(payload.emoji) == '\U0000274c':
-                    channel = guild.get_channel(payload.channel_id)
-                    message = await channel.fetch_message(payload.message_id)
-                    if not isinstance(message.author, discord.User):
-                        if message.author.guild_permissions.kick_members:
-                            return
-
-                    await self.console.print(f"Log :x: de {message.author.display_name} dans #{channel.name} par {payload.member.display_name}")
-                    await message.delete()
-
-                    log = Data(f"LOG {payload.emoji}", message.author, payload.member, message.created_at, message=message)
-                    em  = log.embed(isLog=True)
-                    try:
-                        await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-                    except Exception as error:
-                        await self.console.print_error(None, error)
-                        # traceback.print_exc()
-                    log.to_dataframe()
-        except Exception as error:
-            await self.console.print_error(None, error)
-            # traceback.print_exc()
-
-    # KICKS & BANS
-    @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member):
-        if not member.guild.me.guild_permissions.view_audit_log:
-            return
-
-        await asyncio.sleep(5)
-        guild = member.guild
-        entries = [entry async for entry in guild.audit_logs(limit=20) if entry.action in (discord.AuditLogAction.kick, discord.AuditLogAction.ban) and entry.target.id == member.id]
-        if len(entries) == 0:
-            return
-        
-        # Check the last entry only
-        entry = entries[0]
-        if entry.action == discord.AuditLogAction.kick:
-            log = Data(f"KICK", member, entry.user, entry.created_at, reason=entry.reason)
-            em  = log.embed(isSanction=True)
-            try:
-                await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-            except Exception as error:
-                await self.console.print_error(None, error)
-                # traceback.print_exc()
-            log.to_dataframe()
-
         if entry.action == discord.AuditLogAction.ban:
-            log = Data(f"BAN", member, entry.user, entry.created_at, reason=entry.reason)
-            if entry.user == member.guild.me:
-                return
-            em  = log.embed(isSanction=True)
-            try:
-                await guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-            except Exception as error:
-                await self.console.print_error(None, error)
-                # traceback.print_exc()
-            log.to_dataframe()
-            await guild.get_channel(ChannelId.channel_moderation).send(content=None, embed=discord.Embed(color=0x6eaa5e, description=f":hammer: {str(member)} a été ban par {str(entry.user)}"))   
+            log = Logs(
+                f"Ban",
+                entry.target.id, entry.user_id, 
+                entry.created_at.isoformat(),
+                reason=entry.reason
+            )
+            self.manager.append(log)
+            channel = entry.guild.get_channel(ClassID().channel_logs)
+            await channel.send(embed=log.to_embed(self.bot))
 
-    # TIMEOUT & ROLE EDIT
-    @commands.Cog.listener()
-    async def on_member_update(self, before: discord.Member, after: discord.Member):
-        try:
-            # DEBUT TIMEOUT
-            if after.is_timed_out() and not before.is_timed_out():
-                if after.guild.me.guild_permissions.view_audit_log:
-                    await asyncio.sleep(5)
-                    entries = [entry async for entry in after.guild.audit_logs(limit=20) if entry.target.id == after.id and entry.after.timed_out_until and not entry.before.timed_out_until]
-                    if len(entries) == 0:
-                        return
-                    
-                    # Check the last entry
-                    entry = entries[0]
-                    log = Data(f"TIMEOUT", after, entry.user, entry.created_at, reason=entry.reason)
+        # Timeout
+        if entry.action == discord.AuditLogAction.member_update:
+            # Beginning of timeout
+            if hasattr(entry.after, 'timed_out_until') \
+            and not hasattr(entry.before, 'timed_out_until'):
+                # Length of timeout
+                timedelta = entry.target.timed_out_until - entry.created_at
+                days, hours, mins, secs = (
+                    timedelta.days,
+                    (timedelta.seconds // 3600) % 24,
+                    (timedelta.seconds // 60) % 60,
+                    timedelta.secondss % 60
+                    )
+                if days > 1:        length = "7j"
+                elif hours > 1:     length = "1j"
+                elif mins > 10:     length = "1h"
+                elif mins > 5:      length = "10mn"
+                elif mins > 1:      length = "5mn"
+                else:               length = "1mn"
+
+                log = Logs(
+                    f"TIMEOUT - {length}",
+                    entry.target.id, entry.user_id, 
+                    entry.created_at.isoformat(),
+                    reason=entry.reason
+                )
+                self.manager.append(log)
+                channel = entry.guild.get_channel(ClassID().channel_logs)
+                await channel.send(embed=log.to_embed(self.bot))
                 
-                else:
-                    log = Data(f"TIMEOUT", after, after.guild.me, discord.utils.utcnow())
+            # End of timeout
+            if hasattr(entry.before, 'timed_out_until') \
+            and not hasattr(entry.after, 'timed_out_until'):
+                channel = entry.guild.get_channel(ClassID().channel_moderation)
+                await channel.send(embed=discord.Embed(description=(
+                    f":alarm_clock: {entry.user.mention} "
+                    f"a terminé son time-out !"
+                    )))
+                return
+        
+        # Quarantine
+        if entry.action == discord.AuditLogAction.member_role_update:
+            roles: List[discord.Role] = entry.after.roles
 
-                em  = log.embed(isSanction=True)
-                try:
-                    await after.guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-                except Exception as error:
-                    await self.console.print_error(None, error)
-                    # traceback.print_exc()
-                log.to_dataframe()
+            if roles and roles[0].id in ClassID().quarantine:
+                log = Logs(
+                    f"MISE EN QUARANTAINE",
+                    entry.target.id, entry.user_id, 
+                    entry.created_at.isoformat()
+                )
+                self.manager.append(log)
+                channel = entry.guild.get_channel(ClassID().channel_logs)
+                await channel.send(embed=log.to_embed(self.bot))
 
-            # FIN TIMEOUT
-            if not after.is_timed_out() and before.is_timed_out():
-                await after.guild.get_channel(ChannelId.channel_moderation).send(embed=discord.Embed(description=f':alarm_clock: {after.mention} a terminé son time-out !'))
+    # on_raw_reaction_add => logs, suppr
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(
+        self, 
+        payload: discord.RawReactionActionEvent
+        ):
+        """ Log or delete messages with emoji reactions """
+        # Check if Member can manage messages
+        if not payload.member.guild_permissions.manage_messages:
+            return
+        
+        # LOG 👀
+        if str(payload.emoji) == "\U0001f440":
+            channel = self.bot.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
 
-            # AJOUT ROLES
-            roles_after  = [item for item in after.roles if item not in before.roles]
-            roles_before = [item for item in before.roles if item not in after.roles]
-            if len(roles_after) == 0 and len(roles_before) == 0:
+            # Avoid to log admins
+            if isinstance(message.author, discord.Member) \
+            and message.author.guild_permissions.kick_members:
                 return
             
-            # AUTOROLES
-            # NOT VERIFIED YET
-            for role in roles_after:
-                if role.id in RolesId.autoroles_list:
-                    await after.guild.get_channel(ChannelId.channel_autoroles).send(content=f":green_circle: {after.mention} a obtenu le rôle {role.name}")
-            for role in roles_before:
-                if role.id in RolesId.autoroles_list:
-                    await after.guild.get_channel(ChannelId.channel_autoroles).send(content=f":red_circle: {after.mention} a perdu le rôle {role.name}")
+            await message.remove_reaction(payload.emoji, payload.member)
+            log = Logs(
+                f"LOG {payload.emoji}",
+                message.author.id, payload.member.id, 
+                message.created_at.isoformat(),
+                content=message.content, 
+                content_id=message.id, 
+                channel_id=channel.id
+            )
+            self.manager.append(log)
+            channel_logs = message.guild.get_channel(ClassID().channel_logs)
+            await channel_logs.send(embed=log.to_embed(self.bot))
 
-            # QUARANTAINE
-            # NOT VERIFIED YET
-            for role in roles_after:
-                if role.id in RolesId.quarantaine_list:
-                    if after.guild.me.guild_permissions.view_audit_log:
-                        await asyncio.sleep(5)
-                        entries = [entry async for entry in after.guild.audit_logs(limit=20, action=discord.AuditLogAction.member_role_update) if entry.target.id == after.id and role in entry.after.roles]
-                        if len(entries) != 0:
-                            
-                            # Check the last entry
-                            entry = entries[0]
-                            log = Data(f"MISE EN QUARANTAINE", after, entry.user, entry.created_at)
-                            em  = log.embed(isSanction=True)
-                            try:
-                                await after.guild.get_channel(ChannelId.channel_log).send(content=None, embed=em)
-                            except Exception as error:
-                                await self.console.print_error(None, error)
-                                # traceback.print_exc()
-                            log.to_dataframe()
-        except Exception as error:
-            await self.console.print_error(None, error)
-            # traceback.print_exc()
+        # LOG ❌
+        if str(payload.emoji) == '\U0000274c':
+            channel = self.bot.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
 
-    # MUTE
-    @commands.Cog.listener()
-    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
-        if after.mute and not before.mute:
-            channel = member.guild.get_channel(ChannelId.channel_moderation)
-            await channel.send(embed=discord.Embed(description=f':mute: {str(member)} a été mute dans {after.channel.mention}', color=0xfe0000))
-        if before.mute and not after.mute:
-            channel = member.guild.get_channel(ChannelId.channel_moderation)
-            await channel.send(embed=discord.Embed(description=f":loud_sound: {str(member)} n'est plus mute !", color=0x6eaa5e))
+            # Avoid to log admins
+            if isinstance(message.author, discord.Member) \
+            and message.author.guild_permissions.kick_members:
+                return
             
-async def setup(bot):
-    await bot.add_cog(Moderation(bot))
+            await message.delete()
+            log = Logs(
+                f"LOG {payload.emoji}",
+                message.author.id, payload.member.id, 
+                message.created_at.isoformat(),
+                content=message.content, 
+                content_id=message.id, 
+                channel_id=channel.id
+            )
+            self.manager.append(log)
+            channel_logs = message.guild.get_channel(ClassID().channel_logs)
+            await channel_logs.send(embed=log.to_embed(self.bot))
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(ModerationCog(bot))
