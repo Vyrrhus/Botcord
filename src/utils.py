@@ -15,7 +15,7 @@ class Paginator(discord.ui.View):
         self.interaction     = interaction
         self.get_page        = get_page
         self.withFastButtons = withFastButtons
-
+        
         self.total_pages: Optional[int] = None
         self.index = 1
         super().__init__(timeout=100)
@@ -40,7 +40,7 @@ class Paginator(discord.ui.View):
                 ephemeral=True)
             return False
 
-    async def start(self):
+    async def start(self, isEphemeral=True):
         """ Start View """
         emb, self.total_pages = await self.get_page(self.index)
 
@@ -55,7 +55,7 @@ class Paginator(discord.ui.View):
         self.update_buttons()
         await self.interaction.response.send_message(
             embed=emb,
-            ephemeral=True, 
+            ephemeral=isEphemeral, 
             view=self)
 
     async def edit_page(self, interaction: discord.Interaction):
@@ -74,7 +74,7 @@ class Paginator(discord.ui.View):
             self.children[1].disabled  = self.index == 1
             self.children[-2].disabled = self.index == self.total_pages
 
-    @discord.ui.button(label="\U000023ee")
+    @discord.ui.button(label="|\U000025c0\U000025c0", row=4)
     async def fastprevious(
         self, 
         interaction: discord.Interaction, 
@@ -83,7 +83,7 @@ class Paginator(discord.ui.View):
         self.index = 1
         await self.edit_page(interaction)
 
-    @discord.ui.button(label="\U000025c0")
+    @discord.ui.button(label="\U000025c0", row=4)
     async def previous(
         self, 
         interaction: discord.Interaction, 
@@ -92,7 +92,7 @@ class Paginator(discord.ui.View):
         self.index -= 1
         await self.edit_page(interaction)
     
-    @discord.ui.button(label="\U000025b6")
+    @discord.ui.button(label="\U000025b6", row=4)
     async def next(
         self, 
         interaction: discord.Interaction, 
@@ -101,7 +101,7 @@ class Paginator(discord.ui.View):
         self.index += 1
         await self.edit_page(interaction)
     
-    @discord.ui.button(label="\U000023ed")
+    @discord.ui.button(label="\U000025b6\U000025b6|", row=4)
     async def fastnext(
         self,
         interaction: discord.Interaction,
