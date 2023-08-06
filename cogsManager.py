@@ -1,7 +1,6 @@
 """ Cogs Manager Class
 """
 import os
-import traceback
 import importlib
 import inspect
 from typing import List

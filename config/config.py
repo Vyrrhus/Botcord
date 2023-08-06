@@ -1,7 +1,7 @@
 """ Config Classes
 """
 from __future__ import annotations
-from typing import Dict, List, Any, Callable
+from typing import Dict, List, Any
 import json
 
 import discord

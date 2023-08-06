@@ -7,7 +7,6 @@ Documentation of discord.py is available at :
 """
 import discord
 from discord.ext import commands
-import asyncio
 from src import check
 from cogsManager import *
 

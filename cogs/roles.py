@@ -3,7 +3,7 @@
     sélectionnés, une notification se fait dans le canal où la
     commande a été faite.
 """
-from typing import Dict, List, Optional
+from typing import Dict, List
 import discord
 from discord.ext import commands
 from discord import app_commands
