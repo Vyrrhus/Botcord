@@ -80,7 +80,7 @@ async def _logout(interaction: discord.Interaction):
 #------------------------------------------------------------------------------
 # COGS MANAGER
 @BOTCORD.tree.command(name='cogs')
-@check.is_owner()
+@check.is_staff()
 async def _cogs(interaction: discord.Interaction):
     """ Cogs Manager """
     manager = CogsManager(BOTCORD)
