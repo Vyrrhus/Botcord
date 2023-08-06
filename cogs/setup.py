@@ -7,6 +7,7 @@ from discord import app_commands
 from src.utils import Paginator
 from config.config import SetupManager, GUILD
 from src import check
+from cogsManager import CogsManager
 
 class SetupPaginator(Paginator):
     """ Setup Paginator """
@@ -63,6 +64,7 @@ class SetupPaginator(Paginator):
 
         # Save
         self.manager.config.to_json()
+        CogsManager.reload()
 
     @discord.ui.select(
         cls=discord.ui.ChannelSelect,
@@ -83,6 +85,7 @@ class SetupPaginator(Paginator):
 
         # Save
         self.manager.config.to_json()
+        CogsManager.reload()
 
 class SetupCog(commands.Cog):
     """ SetupCog Class """

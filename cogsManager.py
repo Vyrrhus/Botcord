@@ -26,7 +26,7 @@ class CogsManager:
     @property
     def cogs(self) -> List[str]:
         """ List of active cogs """
-        return self._read()
+        return CogsManager.read()
     
     #--------------------------------------------------------------------------
     def docstring(self, cog:str) -> str:
@@ -40,7 +40,7 @@ class CogsManager:
         self._append(cog)
 
     async def unload(self, cog:str):
-        """ Unoad Cog """
+        """ Unload Cog """
         await self.bot.unload_extension(f"{self.cogsDir}.{cog}")
         self._remove(cog)
 
@@ -57,20 +57,12 @@ class CogsManager:
         return self.embed, n
     
     #--------------------------------------------------------------------------
-    def _read(self, filename='config/extension.config') -> List[str]:
-        """ Private function to read extension.config"""
-        with open(filename, 'r') as file:
-            data = file.read()
-        
-        if data:    return data.split(',')
-        else:       return []
-
     def _append(
             self, 
             cog: str, 
             filename='config/extension.config') -> None:
         """ Add a new cog to the extension.config file"""
-        cogs = self._read(filename)
+        cogs = CogsManager.read(filename)
         if cog not in cogs:
             cogs.append(cog)
         
@@ -82,12 +74,29 @@ class CogsManager:
             cog: str,
             filename='config/extension.config') -> None:
         """ Remove a cog from the extension.config file"""
-        cogs = self._read(filename)
+        cogs = CogsManager.read(filename)
         if cog in cogs:
             cogs.remove(cog)
 
             with open(filename, 'w') as file:
                 file.write(','.join(cogs))
+
+    #--------------------------------------------------------------------------
+    #   STATIC METHOD
+    @staticmethod
+    async def read(filename='config/extension.config') -> List[str]:
+        """ Read extension.config """
+        with open(filename, 'r') as file:
+            data = file.read()
+        
+        if data:    return data.split(',')
+        else:       return []
+
+    @staticmethod
+    async def reload(bot: commands.Bot):
+        """ Reload all cogs loaded """
+        for cog in CogsManager.read():
+            await bot.reload_extension(f"cogs.{cog}")
 
 class CogsPaginator(Paginator):
     """ Paginator extended for Cogs Manager """
