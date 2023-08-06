@@ -19,7 +19,7 @@ class SetupPaginator(Paginator):
         self.manager = manager
         self.buttonRole: discord.ui.Item
         self.buttonChannel: discord.ui.Item
-        super().__init__(interaction, manager.navigate)
+        super().__init__(interaction, manager.navigate, withFastButtons=False)
 
     #--------------------------------------------------------------------------
     async def start(self):
