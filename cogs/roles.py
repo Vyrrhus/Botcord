@@ -93,7 +93,7 @@ class RolesManager:
     def data(self) -> Dict[int, List[int]]:
         """ Read external file to get data """
         with open(self.filename, 'r') as file:
-            data = json.load(file)
+            data: Dict[int, List[int]] = json.load(file)
 
         return {int(key): value for key, value in data.items()}
 
