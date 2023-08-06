@@ -84,7 +84,7 @@ class CogsManager:
     #--------------------------------------------------------------------------
     #   STATIC METHOD
     @staticmethod
-    async def read(filename='config/extension.config') -> List[str]:
+    def read(filename='config/extension.config') -> List[str]:
         """ Read extension.config """
         with open(filename, 'r') as file:
             data = file.read()

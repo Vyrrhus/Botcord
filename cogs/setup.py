@@ -64,7 +64,7 @@ class SetupPaginator(Paginator):
 
         # Save
         self.manager.config.to_json()
-        CogsManager.reload()
+        await CogsManager.reload()
 
     @discord.ui.select(
         cls=discord.ui.ChannelSelect,
@@ -85,7 +85,7 @@ class SetupPaginator(Paginator):
 
         # Save
         self.manager.config.to_json()
-        CogsManager.reload()
+        await CogsManager.reload()
 
 class SetupCog(commands.Cog):
     """ SetupCog Class """
