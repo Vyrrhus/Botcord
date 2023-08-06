@@ -1,7 +1,6 @@
 """ Cette extension ajoute des outils spécifiques à la modération :
-
     ▫️ ban temporaire
-    ▫️ gestion des logs
+    ▫️ gestion des logs avec la commande **/logs**
     ▫️ suppression et log de messages par emoji en réaction
 """
 from __future__ import annotations
