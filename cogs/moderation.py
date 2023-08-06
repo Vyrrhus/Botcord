@@ -14,7 +14,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from src.utils import Paginator
-from config.config import ClassID
+from config.config import ConfigBot, GUILD
 import src.check as check
 
 ###############################################################################
@@ -321,14 +321,14 @@ class LogsView(discord.ui.View):
         await self.start_paginator(interaction, select.values[0])
 
 class LogsPaginator(Paginator):
-    """ Logs View """
+    """ Logs Paginator """
     def __init__(
             self, 
             interaction: discord.Interaction, 
             manager: LogsManager,
             selectView: LogsView
         ) -> None:
-        """ Logs View Constructor """
+        """ Logs Paginator Constructor """
         self.manager    = manager
         self.selectView = selectView
         super().__init__(interaction, manager.navigate)
@@ -416,11 +416,12 @@ class ModerationCog(commands.Cog):
         print(f"Cog [{self.__cog_name__}] activé.")
         self.bot     = bot
         self.manager = LogsManager(self.bot)
+        self.config  = ConfigBot()
     
     #--------------------------------------------------------------------------
     #   SLASH COMMANDS
     @app_commands.command(name="logs")
-    @app_commands.guilds(ClassID().guild)
+    @app_commands.guilds(GUILD)
     @check.can_kick()
     async def _logsCommand(
         self,
@@ -441,7 +442,7 @@ class ModerationCog(commands.Cog):
         logs = LogsManager(self.bot).filter(target_id=member.id)
         if len(logs) > 0:
             channel = member.guild.get_channel(
-                ClassID().channel_moderation
+                self.config.channel.moderation
                 )
             await channel.send(embed=discord.Embed(description=(
                 f":star: {str(member)} a rejoint le serveur "
@@ -472,7 +473,7 @@ class ModerationCog(commands.Cog):
         else:
             return
         
-        channel = member.guild.get_channel(ClassID().channel_moderation)
+        channel = member.guild.get_channel(self.config.channel.moderation)
         await channel.send(embed=embed)
 
     @commands.Cog.listener()
@@ -487,7 +488,7 @@ class ModerationCog(commands.Cog):
                 reason=entry.reason
             )
             self.manager.append(log)
-            channel = entry.guild.get_channel(ClassID().channel_logs)
+            channel = entry.guild.get_channel(self.config.channel.logs)
             await channel.send(embed=log.to_embed(self.bot))
         
         # Ban
@@ -499,7 +500,7 @@ class ModerationCog(commands.Cog):
                 reason=entry.reason
             )
             self.manager.append(log)
-            channel = entry.guild.get_channel(ClassID().channel_logs)
+            channel = entry.guild.get_channel(self.config.channel.logs)
             await channel.send(embed=log.to_embed(self.bot))
 
         # Timeout
@@ -529,13 +530,13 @@ class ModerationCog(commands.Cog):
                     reason=entry.reason
                 )
                 self.manager.append(log)
-                channel = entry.guild.get_channel(ClassID().channel_logs)
+                channel = entry.guild.get_channel(self.config.channel.logs)
                 await channel.send(embed=log.to_embed(self.bot))
                 
             # End of timeout
             if hasattr(entry.before, 'timed_out_until') \
             and not hasattr(entry.after, 'timed_out_until'):
-                channel = entry.guild.get_channel(ClassID().channel_moderation)
+                channel = entry.guild.get_channel(self.config.channel.moderation)
                 await channel.send(embed=discord.Embed(description=(
                     f":alarm_clock: {entry.user.mention} "
                     f"a terminé son time-out !"
@@ -546,14 +547,14 @@ class ModerationCog(commands.Cog):
         if entry.action == discord.AuditLogAction.member_role_update:
             roles: List[discord.Role] = entry.after.roles
 
-            if roles and roles[0].id in ClassID().quarantine:
+            if roles and roles[0].id in self.config.role.quarantine:
                 log = Logs(
                     f"MISE EN QUARANTAINE",
                     entry.target.id, entry.user_id, 
                     entry.created_at.isoformat()
                 )
                 self.manager.append(log)
-                channel = entry.guild.get_channel(ClassID().channel_logs)
+                channel = entry.guild.get_channel(self.config.channel.logs)
                 await channel.send(embed=log.to_embed(self.bot))
 
     # on_raw_reaction_add => logs, suppr
@@ -587,7 +588,7 @@ class ModerationCog(commands.Cog):
                 channel_id=channel.id
             )
             self.manager.append(log)
-            channel_logs = message.guild.get_channel(ClassID().channel_logs)
+            channel_logs = message.guild.get_channel(self.config.channel.logs)
             await channel_logs.send(embed=log.to_embed(self.bot))
 
         # LOG ❌
@@ -610,7 +611,7 @@ class ModerationCog(commands.Cog):
                 channel_id=channel.id
             )
             self.manager.append(log)
-            channel_logs = message.guild.get_channel(ClassID().channel_logs)
+            channel_logs = message.guild.get_channel(self.config.channel.logs)
             await channel_logs.send(embed=log.to_embed(self.bot))
 
 async def setup(bot: commands.Bot):

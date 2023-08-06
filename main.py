@@ -13,14 +13,14 @@ from cogsManager import *
 
 ###############################################################################
 #   SETTINGS
-from config.config import TOKEN, PREFIX, ClassID
-from config.version import VERSION
+from config.config import TOKEN, PREFIX, OWNER
+from config.__version__ import VERSION
 
 ###############################################################################
 #   BOT
 BOTCORD = commands.Bot(
     command_prefix=PREFIX,
-    owner_id=ClassID().owner,
+    owner_id=OWNER,
     intents=discord.Intents.all()
     )
 
@@ -31,8 +31,9 @@ BOTCORD = commands.Bot(
 @commands.is_owner()
 async def sync(ctx: commands.Context) -> None:
     """ Sync slash commands to the guild"""
-    ctx.bot.tree.copy_global_to(guild=ctx.guild)
-    synced = await ctx.bot.tree.sync(guild=ctx.guild)
+    bot: commands.Bot = ctx.bot
+    bot.tree.copy_global_to(guild=ctx.guild)
+    synced = await bot.tree.sync(guild=ctx.guild)
     await ctx.send(
         f"Synchronisation de {len(synced)} commandes sur ce serveur.",
         ephemeral=True
@@ -84,7 +85,6 @@ async def _cogs(interaction: discord.Interaction):
     """ Cogs Manager """
     manager = CogsManager(BOTCORD)
     await CogsPaginator(interaction, manager).start()
-
 
 
 ###############################################################################

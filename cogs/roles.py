@@ -9,7 +9,7 @@ from discord.ext import commands
 from discord import app_commands
 import json
 
-from config.config import ClassID
+from config.config import GUILD
 import src.check as check
 
 class RolesManager:
@@ -174,7 +174,7 @@ class RolesCog(commands.Cog):
     #   SLASH COMMANDS
 
     @app_commands.command(name="role")
-    @app_commands.guilds(ClassID().guild)
+    @app_commands.guilds(GUILD)
     @check.is_staff()
     async def _roleCommand(
         self, 
