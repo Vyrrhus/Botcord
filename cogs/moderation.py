@@ -7,6 +7,7 @@
 from __future__ import annotations
 from typing import List
 import pandas as pd
+import datetime
 
 import discord
 from discord.ext import commands
@@ -507,12 +508,13 @@ class ModerationCog(commands.Cog):
             if hasattr(entry.after, 'timed_out_until') \
             and not hasattr(entry.before, 'timed_out_until'):
                 # Length of timeout
+                timedelta: datetime.timedelta 
                 timedelta = entry.target.timed_out_until - entry.created_at
                 days, hours, mins, secs = (
                     timedelta.days,
                     (timedelta.seconds // 3600) % 24,
                     (timedelta.seconds // 60) % 60,
-                    timedelta.secondss % 60
+                    timedelta.seconds % 60
                     )
                 if days > 1:        length = "7j"
                 elif hours > 1:     length = "1j"
