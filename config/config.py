@@ -3,6 +3,7 @@
 from __future__ import annotations
 from typing import Dict, List, Any
 import json
+from inspect import cleandoc
 
 import discord
 from discord.ext import commands
@@ -76,7 +77,7 @@ class SetupRole(SetupBase):
                         ▫️ / role : notifie les changements de rôles
                         choisis dans le canal où se fait la commande.
                     """,
-        "quarantaine":  """ Les rôles sélectionnés sont ceux qui peuvent
+        "quarantine":   """ Les rôles sélectionnés sont ceux qui peuvent
                             déclencher le log "Mise en quarantaine".
                         """
     }
@@ -89,27 +90,27 @@ class SetupRole(SetupBase):
         self.staff:      List[int]
         self.quarantine: List[int]
 
-        self.set_params(prefix="role_", **data)
+        self.set_params(**data)
 
     def embed(
             self, 
-            bot: commands.Bot, 
-            guild_id: int,
+            bot: commands.Bot,
             key:str,
             title: str = ""
         ) -> discord.Embed:
         """ discord.Embed associated to a given attribute key """
         description = self.description[key]
-        guild = bot.get_guild(guild_id)
+        guild = bot.get_guild(GUILD)
         embed = discord.Embed.from_dict(
             {
                 "title":  title if title else None,
-                "description": description,
+                "description": cleandoc(description),
                 "fields": [{
-                    "name": "\n ".join([
+                    "value": cleandoc("\n ".join([
                         "▫️ " + guild.get_role(role_id).name
                         for role_id in self.__dict__[key]
-                    ])
+                    ])),
+                    "name": "Rôles actuels :" 
                 }]
             }
         )
@@ -119,17 +120,17 @@ class SetupRole(SetupBase):
 class SetupChannel(SetupBase):
     """ Setup Channel | Category Class """
     description = {
-        "moderation":   """ Les canaux sélectionnés sont ceux où le bot
+        "moderation":   """ Le canal sélectionné est celui où le bot
                             va envoyer une notification pour : \n
-                            ▫️ la fin d'un time-out \n
+                            ▫️ l'interruption d'un time-out \n
                             ▫️ le mute / unmute en vocal \n
                             ▫️ l'arrivée de quelqu'un sur le serveur avec
                             déjà au moins un log.
                         """,
-        "logs":         """ Les canaux sélectionnés sont ceux où le bot
+        "logs":         """ Le canal sélectionné est celui où le bot
                             va publier un log : \n
                             Kick, Ban, time-out, mise en quarantaine, 
-                            logs :eye: et logs :x:
+                            logs 👀 et logs ❌.
                         """
     }
     
@@ -141,12 +142,11 @@ class SetupChannel(SetupBase):
         self.moderation: int
         self.logs:       int
 
-        self.set_params(prefix="channel_", **data)
-    
+        self.set_params(**data)
+
     def embed(
             self, 
-            bot: commands.Bot, 
-            guild_id: int,
+            bot: commands.Bot,
             key:str,
             title: str = ""
         ) -> discord.Embed:
@@ -155,12 +155,13 @@ class SetupChannel(SetupBase):
         embed = discord.Embed.from_dict(
             {
                 "title":  title if title else None,
-                "description": description,
+                "description": cleandoc(description),
                 "fields": [{
-                    "name": "\n ".join([
+                    "value": cleandoc("\n ".join([
                         "▫️ " + bot.get_channel(channel_id).name
                         for channel_id in [self.__dict__[key]]
-                    ])
+                    ])),
+                    "name": "Canal textuel actuel : "
                 }]
             }
         )
@@ -227,12 +228,11 @@ class SetupManager:
         self.currentGroup = groupName[page - 1]
         self.currentParam = paramName[page - 1]
 
-        group: SetupBase = self.__dict__[self.currentGroup]
-        embed = group.embed(
-            self.bot, 
-            self.config.guild,
+        group: SetupBase = self.config.__dict__[self.currentGroup]
+        embed : discord.Embed = group.embed(
+            self.bot,
             self.currentParam,
-            title="Configuration des commandes 🔧"
+            title="🔧 Configuration des commandes 🔧"
         )
 
         return embed, n
@@ -263,13 +263,19 @@ class ConfigBot:
     #   METHODS
     def set_params(self, **params):
         """ Set parameters in the config file """
-        self.role = SetupRole(**params)
-        for key in self.role.__dict__.keys():
-            params.pop(f"{self.role.prefix}{key}", None)
+        if not hasattr(self, "role"):
+            self.role = SetupRole(**params)
+            for key in self.role.__dict__.keys():
+                params.pop(f"{self.role.prefix}{key}", None)
+        else:
+            self.role.set_params(**params)
 
-        self.channel = SetupChannel(**params)
-        for key in self.channel.__dict__.keys():
-            params.pop(f"{self.channel.prefix}{key}", None)
+        if not hasattr(self, "channel"):
+            self.channel = SetupChannel(**params)
+            for key in self.channel.__dict__.keys():
+                params.pop(f"{self.channel.prefix}{key}", None)
+        else:
+            self.channel.set_params(**params)
         
         for key, value in params.items():
             setattr(self, key, value)
@@ -278,7 +284,6 @@ class ConfigBot:
         """ Store attributes into .json file """
         data = {}
         for key, value in self.__dict__.items():
-            print(key)
             if key == "filename":   continue
 
             if not isinstance(value, SetupBase):

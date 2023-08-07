@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord import app_commands
 
 from src.utils import Paginator
-from config.config import SetupManager, GUILD
+from config.config import SetupManager, GUILD, ConfigBot
 from src import check
 from cogsManager import CogsManager
 
@@ -29,7 +29,7 @@ class SetupPaginator(Paginator):
         self.remove_item(self.buttonChannel)
         self.remove_item(self.buttonRole)
 
-        super().start(isEphemeral=False)
+        await super().start(isEphemeral=False)
 
     def update_buttons(self):
         # Remove select Items
@@ -45,10 +45,15 @@ class SetupPaginator(Paginator):
         if self.manager.currentGroup == "channel":
             self.add_item(self.buttonChannel)
 
+    async def on_timeout(self) -> None:
+        """ Reload all cogs """
+        await CogsManager.reload(self.manager.bot)
+        return await super().on_timeout()
+    
     #--------------------------------------------------------------------------
     @discord.ui.select(
         cls=discord.ui.RoleSelect,
-        min_values=1,
+        min_values=1, max_values=25,
         placeholder="Sélectionner le·s rôle·s...",
         row=0)
     async def selectRole(
@@ -61,32 +66,36 @@ class SetupPaginator(Paginator):
         # Set new parameters
         group = self.manager.currentGroup
         param = self.manager.currentParam
-        self.manager.config.set_params({f"{group}_{param}": roles_id})
+        self.manager.config.set_params(**{f"{group}_{param}": roles_id})
 
         # Save
         self.manager.config.to_json()
-        await CogsManager.reload()
+
+        # Edit View
+        await self.edit_page(interaction)
 
     @discord.ui.select(
         cls=discord.ui.ChannelSelect,
-        min_values=1,
-        placeholder="Sélectionner le·s canal·aux",
-        row=0)
+        min_values=1, max_values=1,
+        placeholder="Sélectionner le canal",
+        row=1)
     async def selectChannel(
         self,
         interaction: discord.Interaction,
         select: discord.ui.ChannelSelect):
         """ Selecting channel Coroutine """
-        channels_id = [value.id for value in select.values]
+        channels_id = select.values[0].id
         
         # Set new parameters
         group = self.manager.currentGroup
         param = self.manager.currentParam
-        self.manager.config.set_params({f"{group}_{param}": channels_id})
+        self.manager.config.set_params(**{f"{group}_{param}": channels_id})
 
         # Save
         self.manager.config.to_json()
-        await CogsManager.reload()
+
+        # Edit View
+        await self.edit_page(interaction)
 
 class SetupCog(commands.Cog):
     """ SetupCog Class """
@@ -94,7 +103,8 @@ class SetupCog(commands.Cog):
         """ SetupCog Constructor """
         print(f"Cog [{self.__cog_name__}] activé.")
         self.bot     = bot
-        self.manager = SetupManager(self.bot)
+        self.config  = ConfigBot()
+        self.manager = SetupManager(self.bot, self.config)
         
     #--------------------------------------------------------------------------
     #   SLASH COMMANDS
