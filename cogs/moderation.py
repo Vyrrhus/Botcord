@@ -121,6 +121,7 @@ class Logs:
         elif "👀" in self.type:             embedDict["color"] = 0x4b8262
         elif "❌" in self.type:             embedDict["color"] = 0x4b8262
         elif "QUARANTAINE" in self.type:    embedDict["color"] = 0xd17038
+        elif "TIMEOUT" in self.type:        embedDict["color"] = 0xe6cd5e
         
         return discord.Embed.from_dict(embedDict)
 
