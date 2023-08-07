@@ -70,7 +70,7 @@ class Logs:
             fields.append({
                 "name":     "Utilisateur",
                 "value":    target.mention \
-                            if isinstance(target, discord.Member) \
+                            if hasattr(target, "mention") \
                             else str(target),
                 "inline":   True
             })
@@ -79,7 +79,7 @@ class Logs:
             fields.append({
                 "name":     "Modérateur",
                 "value":    author.mention \
-                            if isinstance(author, discord.Member) \
+                            if hasattr(author, "mention") \
                             else str(author),
                 "inline":   True
             })
