@@ -235,6 +235,8 @@ class SetupManager:
             title="🔧 Configuration des commandes 🔧"
         )
 
+        embed.set_footer(text=f"Page {page} / {n}")
+
         return embed, n
 
 class ConfigBot:
