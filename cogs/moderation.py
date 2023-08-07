@@ -66,34 +66,50 @@ class Logs:
         channel = bot.get_channel(self.channel_id) if self.channel_id else None
         fields = []
 
-        if author:          fields.append({
-            "name":     "Modérateur",
-            "value":    f"{author.mention}",
-            "inline":   True
+        if target:
+            fields.append({
+                "name":     "Utilisateur",
+                "value":    target.mention \
+                            if isinstance(target, discord.Member) \
+                            else str(target),
+                "inline":   True
             })
-        if channel:         fields.append({
-            "name":     "Canal",
-            "value":    f"{channel.mention}",
-            "inline":   True
-        })
-        if self.content:    fields.append({
-            "name":     "Message",
-            "value":    self.content
-        })
-        if self.reason:     fields.append({
-            "name":     "Raison",
-            "value":    self.reason
-        })
+
+        if author:          
+            fields.append({
+                "name":     "Modérateur",
+                "value":    author.mention \
+                            if isinstance(author, discord.Member) \
+                            else str(author),
+                "inline":   True
+            })
+        if self.channel_id:         
+            fields.append({
+                "name":     "Canal",
+                "value":    channel.mention \
+                            if channel is not None \
+                            else "#deleted",
+                "inline":   True
+            })
+        if self.content:    
+            fields.append({
+                "name":     "Message",
+                "value":    self.content
+            })
+        if self.reason:     
+            fields.append({
+                "name":     "Raison",
+                "value":    self.reason
+            })
 
         embedDict = {
             "type": "rich",
-            "title": self.type,
             "author": {
-                "name": f"{str(target)}",
-                "icon_url": target.display_avatar.url
+                "name": f"{self.type} | {str(target)}",
+                "icon_url": target.display_avatar.url if target else None
             },
             "footer": {
-                "text": f"ID : {target.id}"
+                "text": f"ID : {self.target_id}"
             },
             "fields": fields,
             "timestamp": self.time
