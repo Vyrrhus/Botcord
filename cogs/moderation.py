@@ -505,15 +505,14 @@ class ModerationCog(commands.Cog):
         if entry.action == discord.AuditLogAction.member_update:
             # Beginning of timeout
             if hasattr(entry.after, 'timed_out_until') \
-            and not hasattr(entry.before, 'timed_out_until'):
+            and entry.target.is_timed_out():
                 # Length of timeout
                 timedelta: datetime.timedelta 
                 timedelta = entry.target.timed_out_until - entry.created_at
-                days, hours, mins, secs = (
+                days, hours, mins = (
                     timedelta.days,
-                    (timedelta.seconds // 3600) % 24,
-                    (timedelta.seconds // 60) % 60,
-                    timedelta.seconds % 60
+                    (timedelta.seconds // 3600),
+                    (timedelta.seconds // 60)
                     )
                 if days > 1:        length = "7j"
                 elif hours > 1:     length = "1j"
@@ -531,16 +530,15 @@ class ModerationCog(commands.Cog):
                 self.manager.append(log)
                 channel = entry.guild.get_channel(self.config.channel.logs)
                 await channel.send(embed=log.to_embed(self.bot))
-                
-            # End of timeout
-            if hasattr(entry.before, 'timed_out_until') \
-            and not hasattr(entry.after, 'timed_out_until'):
-                channel = entry.guild.get_channel(self.config.channel.moderation)
-                await channel.send(embed=discord.Embed(description=(
-                    f":alarm_clock: {entry.user.mention} "
-                    f"a terminé son time-out !"
-                    )))
-                return
+            
+            # Timeout interrupted
+            elif hasattr(entry.after, 'timed_out_until') \
+            and not entry.target.is_timed_out():
+                channel = entry.guild.get_channel(self.config.channel.logs)
+                await channel.send(embed=discord.Embed(
+                    description=(
+                    f"⏰ Interruption du time-out de {entry.target.name} !"
+                )))
         
         # Quarantine
         if entry.action == discord.AuditLogAction.member_role_update:
@@ -556,7 +554,6 @@ class ModerationCog(commands.Cog):
                 channel = entry.guild.get_channel(self.config.channel.logs)
                 await channel.send(embed=log.to_embed(self.bot))
 
-    # on_raw_reaction_add => logs, suppr
     @commands.Cog.listener()
     async def on_raw_reaction_add(
         self, 
