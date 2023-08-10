@@ -4,7 +4,7 @@
     ▫️ suppression et log de messages par emoji en réaction
 """
 from __future__ import annotations
-from typing import List
+from typing import List, Dict
 import pandas as pd
 import datetime
 
@@ -44,7 +44,7 @@ class Logs:
     #--------------------------------------------------------------------------
     #   PROPERTIES
     @property
-    def to_dict(self):
+    def to_dict(self) -> Dict:
         """ Convert from Logs to dict type """
         return {
             "type":         self.type,
