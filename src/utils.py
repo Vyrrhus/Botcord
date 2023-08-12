@@ -30,8 +30,8 @@ class Paginator(discord.ui.View):
         else:
             emb = discord.Embed(
                 description=(
-                f"Only the author of the command can perform this "
-                f"action."
+                f"Seul l'auteur de la commande peut intéragir avec ce "
+                f"menu."
                 ),
                 color=16711680
             )
@@ -74,6 +74,10 @@ class Paginator(discord.ui.View):
             self.children[1].disabled  = self.index == 1
             self.children[-2].disabled = self.index == self.total_pages
 
+    async def on_timeout(self) -> None:
+        self.clear_items()
+        return await super().on_timeout()
+    
     @discord.ui.button(label="|\U000025c0\U000025c0", row=4)
     async def fastprevious(
         self, 
