@@ -129,6 +129,7 @@ class Logs:
     #   STATIC METHODS
     @staticmethod
     def from_serie(serie: pd.Series) -> Logs:
+        """ Convert pandas.Series into Logs class """
         data = serie.to_dict()
         return Logs(
             data['type'], 
@@ -436,18 +437,33 @@ class ModerationCog(commands.Cog):
     #--------------------------------------------------------------------------
     #   SLASH COMMANDS
     @app_commands.command(name="logs")
+    @app_commands.describe(user_id=(
+        f"Identifiant de l'utilsateur (optionnel s'il est "
+        f"encore sur le serveur)."
+        ))
     @app_commands.guilds(GUILD)
     @check.can_kick()
     async def _logsCommand(
         self,
-        interaction: discord.Interaction
+        interaction: discord.Interaction,
+        user_id: int = None
         ):
         """ Gérer les logs """
         view = LogsView(interaction, self.manager)
-        await interaction.response.send_message(
-            view=view,
-            ephemeral=False
-        )
+
+        # Search for a given ID
+        if user_id is None:     user = None
+        else:                   user = self.bot.get_user(int(id))
+
+        if user:
+            view.manager.options["target_id"] = int(id)
+            await view.start_paginator(interaction, user)
+
+        else:
+            await interaction.response.send_message(
+                view=view,
+                ephemeral=False
+            )
 
     #--------------------------------------------------------------------------
     #   EVENT LISTENERS
