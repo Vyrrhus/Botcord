@@ -130,7 +130,7 @@ class CogsPaginator(Paginator):
         for button in buttons:
             self.add_item(button)
         
-        await super().start()
+        await super().start(isEphemeral=False)
     
     def update_buttons(self):
         """ Update buttons"""
