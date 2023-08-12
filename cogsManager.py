@@ -15,7 +15,7 @@ class CogsManager:
         """ Cogs Manager Constructor """
         self.bot = bot
         self.cogsDir = cogDir
-        self.embed = discord.Embed(title="Gestion des cogs", description="")
+        self.embed = discord.Embed(title="Gestion des extensions", description="")
         self.cogs_available = [
             cog[:-3]
             for cog in os.listdir(cogDir)
@@ -102,11 +102,11 @@ class CogsPaginator(Paginator):
     """ Paginator extended for Cogs Manager """
     activeCog   = {
         "style": discord.ButtonStyle.red,
-        "label": f"{'Désactiver cog':^15}"
+        "label": f"{'Désactiver':^15}"
         }
     inactiveCog = {
         "style": discord.ButtonStyle.green,
-        "label": f"{'Activer cog':^15}"
+        "label": f"{'Activer':^15}"
         }
     
     def __init__(
