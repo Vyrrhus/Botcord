@@ -6,7 +6,7 @@ beautifulsoup4==4.11.1
 bs4==0.0.1
 certifi==2021.10.8
 charset-normalizer==2.0.12
-discord.py @ git+https://github.com/Rapptz/discord.py@868476c99963e72aa529ed6203f86ef529a2c1f1
+discord.py==2.3.1
 frozenlist==1.3.0
 greenlet==1.1.2
 idna==3.3
@@ -23,6 +23,7 @@ requests-oauthlib==1.3.1
 six==1.16.0
 soupsieve==2.3.2.post1
 tweepy==4.9.0
+typing_extensions==4.7.1
 urllib3==1.26.9
 websockets==10.1
 yarl==1.7.2
