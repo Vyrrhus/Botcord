@@ -15,7 +15,10 @@ class CogsManager:
         """ Cogs Manager Constructor """
         self.bot = bot
         self.cogsDir = cogDir
-        self.embed = discord.Embed(title="Gestion des extensions", description="")
+        self.embed = discord.Embed(
+            title="Gestion des extensions", 
+            description=""
+        )
         self.cogs_available = [
             cog[:-3]
             for cog in os.listdir(cogDir)
@@ -23,17 +26,21 @@ class CogsManager:
         ]
 
     #--------------------------------------------------------------------------
+    #   PROPERTIES
     @property
     def cogs(self) -> List[str]:
         """ List of active cogs """
         return CogsManager.read()
     
     #--------------------------------------------------------------------------
+    #   METHODS
     def docstring(self, cog:str) -> str:
         """ Returns main docstring of the given cog"""
         module = importlib.import_module(f"{self.cogsDir}.{cog}")
         return inspect.getdoc(module)
     
+    #--------------------------------------------------------------------------
+    #   ASYNC METHODS
     async def load(self, cog:str):
         """ Load Cog """
         await self.bot.load_extension(f"{self.cogsDir}.{cog}")
@@ -44,7 +51,6 @@ class CogsManager:
         await self.bot.unload_extension(f"{self.cogsDir}.{cog}")
         self._remove(cog)
 
-    # Paginator
     async def navigate(self, page: int):
         """ Coroutine for Paginator """
         offset = page - 1
@@ -57,6 +63,7 @@ class CogsManager:
         return self.embed, n
     
     #--------------------------------------------------------------------------
+    #   PRIVATE METHODS
     def _append(
             self, 
             cog: str, 
@@ -119,6 +126,7 @@ class CogsPaginator(Paginator):
         super().__init__(interaction, manager.navigate, withFastButtons=False)
 
     #--------------------------------------------------------------------------
+    #   ASYNC METHODS
     async def start(self):
         """ Start View """
         buttons = self.children
@@ -132,8 +140,10 @@ class CogsPaginator(Paginator):
         
         await super().start(isEphemeral=False)
     
+    #--------------------------------------------------------------------------
+    #   METHODS
     def update_buttons(self):
-        """ Update buttons"""
+        """ Update buttons """
         super().update_buttons()
 
         idxToggle = len(self.children) // 2
@@ -146,6 +156,7 @@ class CogsPaginator(Paginator):
             self.children[idxToggle].label = self.inactiveCog["label"]
 
     #--------------------------------------------------------------------------
+    #   BUTTONS
     @discord.ui.button(label="Button", row=4)
     async def toggle(
         self,
