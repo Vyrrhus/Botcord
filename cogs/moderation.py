@@ -304,6 +304,8 @@ class LogsPaginator(Paginator):
         self.selectView = selectView
         super().__init__(interaction, manager.navigate)
 
+        self.response: discord.InteractionMessage = None
+
     #--------------------------------------------------------------------------
     #   ASYNC METHODS
     async def start(self):
@@ -334,6 +336,8 @@ class LogsPaginator(Paginator):
         await self.interaction.response.edit_message(
             embed=emb,
             view=self)
+        
+        self.response = await self.interaction.original_response()
 
     async def edit_page(self, interaction: discord.Interaction):
         """ Navigate through pages when on_click event """
@@ -349,6 +353,17 @@ class LogsPaginator(Paginator):
         else:
             self.update_buttons()
             await interaction.response.edit_message(embed=emb, view=self)
+        
+        self.response = await interaction.original_response()
+    
+    async def on_timeout(self) -> None:
+        """ Disable all buttons """
+        for child in self.children:
+            child.disabled = True
+
+        await self.response.edit(view=self)
+        self.stop()
+        self.selectView.stop()
 
     #--------------------------------------------------------------------------
     #   METHODS
@@ -395,33 +410,19 @@ class ModerationCog(commands.Cog):
     #--------------------------------------------------------------------------
     #   SLASH COMMANDS
     @app_commands.command(name="logs")
-    @app_commands.describe(user_id=(
-        f"Identifiant de l'utilsateur (optionnel s'il est "
-        f"encore sur le serveur)."
-        ))
     @app_commands.guilds(GUILD)
     @check.can_kick()
     async def _logsCommand(
         self,
-        interaction: discord.Interaction,
-        user_id: int = None
+        interaction: discord.Interaction
         ):
-        """ Gérer les logs """
+        """ Gérer les logs (uniquement pour les Membres du serveur) """
         view = LogsView(interaction, self.manager)
 
-        # Search for a given ID
-        if user_id is None:     user = None
-        else:                   user = self.bot.get_user(int(id))
-
-        if user:
-            view.manager.options["target_id"] = int(id)
-            await view.start_paginator(interaction, user)
-
-        else:
-            await interaction.response.send_message(
-                view=view,
-                ephemeral=False
-            )
+        await interaction.response.send_message(
+            view=view,
+            ephemeral=False
+        )
 
     #--------------------------------------------------------------------------
     #   EVENT LISTENERS
