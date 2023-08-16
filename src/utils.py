@@ -15,11 +15,15 @@ class Paginator(discord.ui.View):
         self.interaction     = interaction
         self.get_page        = get_page
         self.withFastButtons = withFastButtons
+
+        self.response: discord.InteractionMessage = None
         
         self.total_pages: Optional[int] = None
         self.index = 1
         super().__init__(timeout=100)
 
+    #--------------------------------------------------------------------------
+    #   ASYNC METHODS
     async def interaction_check(
             self, 
             interaction: discord.Interaction
@@ -41,7 +45,7 @@ class Paginator(discord.ui.View):
             return False
 
     async def start(self, isEphemeral=True):
-        """ Start View """
+        """ Initiate the View """
         emb, self.total_pages = await self.get_page(self.index)
 
         # Fast Buttons Removed
@@ -57,13 +61,23 @@ class Paginator(discord.ui.View):
             embed=emb,
             ephemeral=isEphemeral, 
             view=self)
+        self.response = await self.interaction.original_response()
 
     async def edit_page(self, interaction: discord.Interaction):
         """ Navigate through pages when on_click event """
         emb, self.total_pages = await self.get_page(self.index)
         self.update_buttons()
         await interaction.response.edit_message(embed=emb, view=self)
+        self.response = await interaction.original_response()
 
+    async def on_timeout(self) -> None:
+        """ Clear items on time-out """
+        self.clear_items()
+        await self.response.edit(view=self)
+        self.stop()
+
+    #--------------------------------------------------------------------------
+    #   METHODS
     def update_buttons(self):
         """ Update buttons """
         # Disable buttons whenever useful
@@ -73,11 +87,9 @@ class Paginator(discord.ui.View):
         if self.withFastButtons:
             self.children[1].disabled  = self.index == 1
             self.children[-2].disabled = self.index == self.total_pages
-
-    async def on_timeout(self) -> None:
-        self.clear_items()
-        return await super().on_timeout()
     
+    #--------------------------------------------------------------------------
+    #   BUTTONS
     @discord.ui.button(label="|\U000025c0\U000025c0", row=4)
     async def fastprevious(
         self, 
@@ -114,6 +126,8 @@ class Paginator(discord.ui.View):
         self.index = self.total_pages
         await self.edit_page(interaction)
 
+    #--------------------------------------------------------------------------
+    #   STATIC METHODS
     @staticmethod
     def compute_total_pages(
         total_results: int, 

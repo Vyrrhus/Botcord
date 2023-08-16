@@ -17,21 +17,32 @@ class SetupPaginator(Paginator):
             interaction: discord.Interaction,
             manager: SetupManager
     ) -> None:
+        """ Setup Constructor """
         self.manager = manager
         self.buttonRole: discord.ui.Item
         self.buttonChannel: discord.ui.Item
         super().__init__(interaction, manager.navigate, withFastButtons=False)
 
     #--------------------------------------------------------------------------
+    #   ASYNC METHODS
     async def start(self):
+        """ Initiate the View """
         self.buttonChannel = self.children[-1]
         self.buttonRole    = self.children[-2]
         self.remove_item(self.buttonChannel)
         self.remove_item(self.buttonRole)
 
-        await super().start(isEphemeral=False)
+        return await super().start(isEphemeral=False)
 
+    async def on_timeout(self) -> None:
+        """ Reload all cogs on time-out """
+        await CogsManager.reload(self.manager.bot)
+        return await super().on_timeout()
+    
+    #--------------------------------------------------------------------------
+    #   METHODS
     def update_buttons(self):
+        """ Set the select menu Items """
         # Remove select Items
         self.remove_item(self.buttonChannel)
         self.remove_item(self.buttonRole)
@@ -45,12 +56,8 @@ class SetupPaginator(Paginator):
         if self.manager.currentGroup == "channel":
             self.add_item(self.buttonChannel)
 
-    async def on_timeout(self) -> None:
-        """ Reload all cogs """
-        await CogsManager.reload(self.manager.bot)
-        return await super().on_timeout()
-    
     #--------------------------------------------------------------------------
+    #   SELECT MENUS
     @discord.ui.select(
         cls=discord.ui.RoleSelect,
         min_values=1, max_values=25,
@@ -60,7 +67,7 @@ class SetupPaginator(Paginator):
         self,
         interaction: discord.Interaction,
         select: discord.ui.RoleSelect):
-        """ Selecting roles Coroutine"""
+        """ Selecting roles Coroutine """
         roles_id = [value.id for value in select.values]
         
         # Set new parameters
@@ -115,8 +122,7 @@ class SetupCog(commands.Cog):
         self, 
         interaction: discord.Interaction
         ):
-        """ Setup Manager
-        """
+        """ Setup Manager """
         view = SetupPaginator(interaction, self.manager)
         await view.start()
 
