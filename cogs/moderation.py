@@ -1,6 +1,6 @@
 """ Cette extension ajoute des outils spécifiques à la modération :
     ▫️ ban temporaire
-    ▫️ gestion des logs avec la commande **/logs**
+    ▫️ gestion des logs avec la commande `/logs`
     ▫️ suppression et log de messages par emoji en réaction
 """
 from __future__ import annotations
@@ -17,7 +17,6 @@ import src.check as check
 
 ###############################################################################
 #   LOGS CLASS
-
 class Logs:
     """ Logs Class """
     def __init__(
@@ -204,7 +203,7 @@ class LogsManager:
         return filtered
     
     #--------------------------------------------------------------------------
-    #   PAGINATOR NAVIGATION
+    #   ASYNC METHOD (PAGINATOR)
     async def navigate(self, page: int):
         """ Coroutine for Paginator (called by navigation buttons) """
         dataLogs = self.filter()
@@ -222,52 +221,6 @@ class LogsManager:
 
         return self.embed, n
 
-    #--------------------------------------------------------------------------
-    #   TO DELETE => convert old .dat file into .json file
-    @staticmethod
-    def read_old(filename: str):
-        """ Convert old file to .json """
-        # Convert floats to integers
-        def convert_to_int(value):
-            try:
-                return int(float(value))
-            except (ValueError, TypeError):
-                return value
-        
-        # Read csv => pd.DataFrame
-        data = pd.read_csv(
-            filename,
-            index_col=False,
-            converters={
-                column: convert_to_int 
-                for column in ['user', 'moderateur', 'id', 'channel_id']
-                })
-        
-        # Merge two columns
-        data['content'] = data['message'].fillna(data['contenu'])
-        data.drop(columns=['message', 'contenu'], inplace=True)
-
-        # Rename columns
-        data.rename(
-            columns={
-                "user": "target_id", 
-                "moderateur": "author_id", 
-                "raison": "reason",
-                "message": "content",
-                "id": "content_id"
-                }, 
-            inplace=True
-            )
-        
-        data.fillna('', inplace=True)
-
-        # pd.DataFrame => .json
-        data.to_json(
-            "data/old_moderation.json",
-            indent=4,
-            orient="records",
-            force_ascii=False)
-
 class LogsView(discord.ui.View):
     """ Logs View """
     def __init__(
@@ -281,6 +234,7 @@ class LogsView(discord.ui.View):
         super().__init__(timeout=100)
     
     #--------------------------------------------------------------------------
+    #   ASYNC METHODS
     async def interaction_check(
             self, 
             interaction: discord.Interaction
@@ -321,6 +275,7 @@ class LogsView(discord.ui.View):
             await LogsPaginator(interaction, self.manager, self).start()
 
     #--------------------------------------------------------------------------
+    #   SELECT MENUS
     @discord.ui.select(
         cls=discord.ui.UserSelect,
         min_values=1, max_values=1,
@@ -350,6 +305,7 @@ class LogsPaginator(Paginator):
         super().__init__(interaction, manager.navigate)
 
     #--------------------------------------------------------------------------
+    #   ASYNC METHODS
     async def start(self):
         """ Start View """
         buttons = self.children
@@ -394,6 +350,8 @@ class LogsPaginator(Paginator):
             self.update_buttons()
             await interaction.response.edit_message(embed=emb, view=self)
 
+    #--------------------------------------------------------------------------
+    #   METHODS
     def update_buttons(self):
         """ Update buttons """
         # Disable buttons whenever useful
@@ -405,6 +363,7 @@ class LogsPaginator(Paginator):
             self.children[-3].disabled = self.index == self.total_pages
 
     #--------------------------------------------------------------------------
+    #   DELETE BUTTON
     @discord.ui.button(
         label="Supprimer log", 
         style=discord.ButtonStyle.red,
@@ -424,7 +383,6 @@ class LogsPaginator(Paginator):
 
 ###############################################################################
 #   MODERATION COG
-
 class ModerationCog(commands.Cog):
     """ ModerationCog Class """
     def __init__(self, bot: commands.Bot):
