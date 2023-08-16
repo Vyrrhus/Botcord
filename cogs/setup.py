@@ -1,5 +1,5 @@
 """ Cette extension permet de modifier la configuration du bot.
-    ▫️ **/setup** : configurer les channels & rôles
+    ▫️ `/setup` : configurer les channels & rôles
 """
 import discord
 from discord.ext import commands
