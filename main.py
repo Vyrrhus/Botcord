@@ -55,7 +55,6 @@ async def on_ready():
     else:
         print("Aucun cog n'est activé.")
 
-
 #------------------------------------------------------------------------------
 # VERSION
 @BOTCORD.tree.command(name='version')
@@ -78,9 +77,9 @@ async def _logout(interaction: discord.Interaction):
 
 #------------------------------------------------------------------------------
 # COGS MANAGER
-@BOTCORD.tree.command(name='cogs')
+@BOTCORD.tree.command(name='extensions')
 @check.is_staff()
-async def _cogs(interaction: discord.Interaction):
+async def _extensions(interaction: discord.Interaction):
     """ Cogs Manager """
     manager = CogsManager(BOTCORD)
     await CogsPaginator(interaction, manager).start()
