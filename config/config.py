@@ -19,17 +19,10 @@ def _read(filename: str, isInteger=False) -> str:
     else:               return data
 
 ###############################################################################
-#   CLASS
-
+#   SETUP CLASS
 class SetupBase:
-    prefix = ""
-
     """ Setup Base class """
-    def set_params(self, **data:Dict[str, Any]) -> None:
-        """ Add attributes to class, given a prefix """
-        for key, value in data.items():
-            if self.prefix in key:
-                setattr(self, key.split(self.prefix)[1], value)
+    prefix = ""
     
     #--------------------------------------------------------------------------
     #   PROPERTIES
@@ -51,27 +44,19 @@ class SetupBase:
             for key, value in self.__dict__.items()
         }
 
-    @property
-    def buttonType(self) -> str:
-        pass
-
     #--------------------------------------------------------------------------
     #   METHODS
-    def embed(
-            self, 
-            bot: commands.Bot, 
-            guild_id: int,
-            key:str,
-            title: str = ""
-        ) -> discord.Embed:
-        """ Override this method with subclasses """
-        pass
-
+    def set_params(self, **data:Dict[str, Any]) -> None:
+        """ Add attributes to class, given a prefix """
+        for key, value in data.items():
+            if self.prefix in key:
+                setattr(self, key.split(self.prefix)[1], value)
+    
 class SetupRole(SetupBase):
     """ Setup Role Class """
     description = {
         "staff":    """ Les rôles sélectionnés sont ceux qui peuvent
-                        utiliser les commandes /cogs et /role. \n
+                        utiliser les commandes `/cogs` et `/role`. \n
                         ▫️ /cogs : activate ou désactivation des groupes
                         de commandes. \n
                         ▫️ / role : notifie les changements de rôles
@@ -92,6 +77,8 @@ class SetupRole(SetupBase):
 
         self.set_params(**data)
 
+    #--------------------------------------------------------------------------
+    #   METHODS
     def embed(
             self, 
             bot: commands.Bot,
@@ -135,15 +122,17 @@ class SetupChannel(SetupBase):
     }
     
     def __init__(self, prefix="channel_", **data) -> None:
+        """ Setup Channel | Category Constructor """
         self.prefix = prefix
 
-        """ Setup Channel | Category Constructor """
         # Channel
         self.moderation: int
         self.logs:       int
 
         self.set_params(**data)
 
+    #--------------------------------------------------------------------------
+    #   METHODS
     def embed(
             self, 
             bot: commands.Bot,
@@ -211,7 +200,7 @@ class SetupManager:
         return number
     
     #--------------------------------------------------------------------------
-    #   METHODS
+    #   ASYNC METHODS
     async def navigate(self, page: int):
         """ Coroutine for Paginator (called by navigation buttons) """
         n = self.setupSize
@@ -235,10 +224,15 @@ class SetupManager:
             title="🔧 Configuration des commandes 🔧"
         )
 
-        embed.set_footer(text=f"Page {page} / {n}")
+        embed.set_footer(text=(
+            f"Configurez le bot avec `/setup` - "
+            f"Page {page} / {n}"
+        ))
 
         return embed, n
 
+###############################################################################
+#   MAIN CONFIG CLASS
 class ConfigBot:
     """ Config Bot Class """
     def __init__(self, filename: str = "config/id/id.json"):
@@ -302,7 +296,7 @@ class ConfigBot:
 ###############################################################################
 #   TOKEN, PREFIX, EXTENSIONS
 
-TOKEN  = _read('config/token.config')
-PREFIX = _read('config/prefix.config')
-GUILD  = _read('config/id/guild.config', isInteger=True)
-OWNER  = _read('config/id/owner.config', isInteger=True) 
+TOKEN: str  = _read('config/token.config')
+PREFIX: str = _read('config/prefix.config')
+GUILD: int  = _read('config/id/guild.config', isInteger=True)
+OWNER: int  = _read('config/id/owner.config', isInteger=True) 
