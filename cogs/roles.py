@@ -1,5 +1,5 @@
 """ Cette extension s'occupe de la gestion des roles :
-    ▫️ **/role** : lorsqu'un membre obtient ou perd l'un des rôles 
+    ▫️ `/role` : lorsqu'un membre obtient ou perd l'un des rôles 
     sélectionnés, une notification se fait dans le canal où la
     commande a été faite.
 """
@@ -25,7 +25,6 @@ class RolesManager:
 
     #--------------------------------------------------------------------------
     #   METHODS
-    
     def append(self, role_id: int, channel_id: int) -> None:
         """ Add a new channel associated to the role for notification. 
         """
@@ -81,9 +80,40 @@ class RolesManager:
         with open(self.filename, 'w') as file:
             json.dump(new_data, file, indent=4)
 
+    def embed(self, interaction: discord.Interaction):
+        """ Get embed associated with roles """
+        embedDict = dict(
+            title=f"Rôle·s suivi·s sur {interaction.channel.mention} 🕵️",
+            footer={
+                "text": (f"Utilisez le menu déroulant pour sélectionner"
+                         f" les rôles à suivre.")
+            }
+        )
+        
+        # Retrieve role names
+        role_names = []
+        guild = self.bot.get_guild(GUILD)
+        for role_id, channel_id_list in self.data.items():
+            if interaction.channel_id in channel_id_list:
+                role = guild.get_role(role_id)
+                if role:
+                    role_names.append(role.name)
+        
+        # Embed description
+        if role_names:
+            embedDict["description"] = "\n".join([
+                "▫️ " + name
+                for name in role_names
+            ])
+        
+        # Embed description if nothing retrieved
+        else:
+            embedDict["description"] = "Aucun rôle n'est observé."
+
+        return discord.Embed.from_dict(embedDict)
+    
     #--------------------------------------------------------------------------
     #   PROPERTIES
-
     @property
     def roles(self):
         """ Get roles with notification activated """
@@ -98,18 +128,21 @@ class RolesManager:
         return {int(key): value for key, value in data.items()}
 
 class RolesView(discord.ui.View):
-    """ Dropdown + Button for Roles """
+    """ Roles View Class """
     def __init__(
             self,
             interaction: discord.Interaction,
             manager: RolesManager,
         ) -> None:
-        """ RolesView Constructor """
+        """ Roles View Constructor """
         super().__init__(timeout=100)
         self.interaction = interaction
         self.manager     = manager
 
+        self.response: discord.InteractionMessage = None
+
     #--------------------------------------------------------------------------
+    #   ASYNC METHODS
     async def interaction_check(
             self, 
             interaction: discord.Interaction
@@ -129,7 +162,24 @@ class RolesView(discord.ui.View):
                 ephemeral=True)
             return False
 
+    async def on_timeout(self) -> None:
+        self.clear_items()
+        embed = self.response.embeds[0]
+        embed.set_footer(text="Éditez les rôles suivis avec `/cog`")
+        await self.response.edit(view=self, embed=embed)
+        self.stop()
+
+    async def start(self):
+        """ Start View """
+        await self.interaction.response.send_message(
+            embed=self.manager.embed(self.interaction),
+            view=self
+        )
+
+        self.response = await self.interaction.original_response()
+
     #--------------------------------------------------------------------------
+    #   DROPDOWN
     @discord.ui.select(
             cls=discord.ui.RoleSelect, 
             min_values=0, max_values=25,
@@ -139,28 +189,20 @@ class RolesView(discord.ui.View):
         interaction: discord.Interaction, 
         select:discord.ui.RoleSelect):
         """ Selecting roles Coroutine """
+        # Remove all roles within this channel
         self.manager.clear_channel(interaction.channel_id)
+
+        # Add each selected role
         for value in select.values:
             self.manager.append(value.id, interaction.channel_id)
-
-        if select.values:
-            await interaction.response.edit_message(
-                content=(
-                f":spy: **Les rôles suivants sont désormais observés** :spy:\n"
-                ) + "\n".join(["▫️ " + role.name for role in select.values]),
-                embed=None,
-                view=None
-            )
         
-        else:
-            await interaction.response.edit_message(
-                content=f"**Aucun rôle n'est observé.** ",
-                embed=None,
-                view=None
-            )
+        # Edit response
+        await interaction.response.edit_message(
+            embed=self.manager.embed(interaction),
+            view=self
+        )
         
-        message = await interaction.original_response()
-        await message.pin()
+        self.response = await interaction.original_response()
 
 class RolesCog(commands.Cog):
     """ RolesCog Class """
@@ -172,7 +214,6 @@ class RolesCog(commands.Cog):
         
     #--------------------------------------------------------------------------
     #   SLASH COMMANDS
-
     @app_commands.command(name="role")
     @app_commands.guilds(GUILD)
     @check.is_staff()
@@ -180,22 +221,12 @@ class RolesCog(commands.Cog):
         self, 
         interaction: discord.Interaction
         ):
-        """ Gérer les rôles suivis dans ce canal
-        """
-        emb = discord.Embed(
-            title=f"Rôle·s suivi·s sur #{interaction.channel.name}",
-            description=(f"Utiliser le menu déroulant pour sélectionner"
-                         f" les rôles à suivre.")
-        )
+        """ Gérer les rôles suivis dans ce canal """
         view = RolesView(interaction, self.manager)
-        await interaction.response.send_message(
-            embed=emb,
-            view=view
-        )
+        await view.start()
 
     #--------------------------------------------------------------------------
     #   EVENT LISTENERS
-
     @commands.Cog.listener()
     async def on_member_update(
         self,
